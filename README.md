@@ -38,6 +38,14 @@ eBPFを使ったプログラミングをこれから始める人，始めては�
 - [bcc入門][bcc-intro]
 
 
+## 本ドキュメントのライセンスについて
+最初に述べたように，本ドキュメントは[bcc][bcc]と[bpftrace][bpftrace]の
+公式リファレンスガイドをベースにしているため，ライセンスは
+それぞれのリポジトリのライセンスであるApache2.0を踏襲している．
+
+具体的なライセンス文は[LICESE][license]を参照していただきたい．
+
+
 <!-- 参考文献リスト -->
 [bpftrace]: <https://github.com/iovisor/bpftrace> "bpftrace"
 [bpftrace-ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md>  "bpftrace公式リファレンスガイド"
@@ -47,6 +55,9 @@ eBPFを使ったプログラミングをこれから始める人，始めては�
 [bcc-ref-guide]: <https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md> "bcc公式リファレンスガイド"
 [kernel-version]: <https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md> "bccの機能と利用可能なカーネルバージョンの対応関係"
 [install]: <INSTALL.md> "インストールドキュメント"
+[license]: <LICENSE> "ライセンスファイル"
 [bpftrace-intro]: <bpftrace/README.md> "bpftrace入門"
 [bcc-intro]: <bcc/README.md> "bcc入門"
+
+
 
