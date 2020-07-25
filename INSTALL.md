@@ -252,8 +252,8 @@ $ git submodule update --init
 bpftraceを使うためには，[bcc][bcc]をインストール済みであることが
 前提であるので，[bcc][bcc]はインストールすること．
 また，
-bpftraceのインストールは，[マニュアル][bpftrace-install]に
-今の所問題がないので，そのまま実行していただきたい．
+bpftraceは，[インストールマニュアル][bpftrace-install]に
+問題がないので，そのまま実行していただきたい．
 
 
 
