@@ -1,0 +1,8 @@
+uprobe:/home/noro/devel/bpftrace-doc/Probes/target-sample:func
+{
+        printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid, tid, arg0);
+}
+uretprobe:/home/noro/devel/bpftrace-doc/Probes/target-sample:func
+{
+        printf("%lu, func, end,   pid = %d, tid = %d, retval = %d\n",nsecs, pid, tid, retval);
+}

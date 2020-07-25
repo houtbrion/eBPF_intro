@@ -1,0 +1,61 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+from ctypes import c_uint, c_int, c_ulonglong, Structure
+
+# eBPFのソースを文字列として定義
+bpf_text = """
+BPF_PROG_ARRAY(ftable, 2); // tail callのプログラムエントリ登録表の作成
+
+// 監視対象のイベント発生時は呼ばれない関数
+int foo(struct pt_regs *ctx)
+{
+	bpf_trace_printk("I'm foo\\n");
+	return 0;
+};
+
+// 監視対象のイベント発生時に呼び出される関数
+int bar(struct pt_regs *ctx)
+{
+	bpf_trace_printk("I'm bar\\n");
+        ftable.call(ctx, 1); // 表の1番目のエントリに登録されている関数を呼び出し
+	return 0;
+};
+"""
+
+# eBPFのブログラムをロード
+b = BPF(text=bpf_text)
+
+# 表を定義してアクセスするための変数に代入
+ftable = b.get_table("ftable")
+
+# eBPFの関数fooをkprobe用としてロード
+foo = b.load_func("foo", BPF.KPROBE)
+
+# 関数barをexecveを監視するためのプログラムとして割り当て
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="bar")
+
+# 関数fooを表の1番目のエントリとして登録
+ftable[c_int(1)] = c_int(foo.fd)
+
+# ヘッダの出力
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# eBPFの出力を取得してコンソール出力するループ
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # Ctrl-Cでループを抜ける
+            exit()
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+

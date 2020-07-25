@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+import time
+
+# define BPF program
+bpf_text = """
+// indexが非負32bit整数，値がlongのuidcntという表(要素数2)を定義
+BPF_TABLE("array", uint32_t, long, uidcnt, 2);
+int syscall__execve(struct pt_regs *ctx)
+{
+    // execveのuid/tgidを取得
+    u64 ugid = bpf_get_current_uid_gid();
+    u32 uid = ugid;  // 取得したIDの下32bitがuid
+    u32  idx;
+    if (uid == 0) {  // uidがrootの時，indexは0
+        idx = 0;
+    } else {         // uidが非rootの時，indexは1
+        idx = 1;
+    }
+    long *value;
+    value = uidcnt.lookup(&idx); // 表のエントリを取得
+    if (value) {
+        uidcnt.increment(idx);   // 表のエントリを更新
+    }
+
+    return 0;
+};
+"""
+
+# initialize BPF
+b = BPF(text=bpf_text)
+
+# execveが実行された場合にVM上の関数「syscall__execve()」を呼び出す設定
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# テーブルの取得
+uidcnt = b.get_table("uidcnt")
+
+# filter and format output
+while 1:
+    print("=================測定結果===================")
+    try:
+        print("【map.keys()を使った場合の出力】")
+        for k in uidcnt.keys():    # 表のキーでループ
+            val = uidcnt[k].value  # 表のキーに対応する要素を取得
+            i = k.value            # キーを値に変換
+            if i == 0 :
+                print("rootユーザ: {} 回execve呼び出し".format(val))
+            else:
+                print("一般ユーザ: {} 回execve呼び出し".format(val))
+        print("")
+        print("【map.values()を使った場合の出力】")
+        print("rootユーザ ,  一般ユーザ ")
+        for v in uidcnt.values():  # 表の値を全部一気に取得してループ
+            print(v.value, '(回)           ', end=" ")
+        print("")
+        print("")
+        uidcnt.clear()             # 表をクリア
+        time.sleep(5)              # 5秒待機
+    except KeyboardInterrupt:      # Ctrl-Cでループから抜ける
+        exit()
+
+

@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのプログラム(文字列)をVMにロードする定義
+b = BPF(text="""
+#define KBUILD_MODNAME "tcp_probe"
+#include <net/ipv6.h>
+TRACEPOINT_PROBE(tcp, tcp_probe) {
+    // args is from /sys/kernel/debug/tracing/events/tcp/tcp_probe/format
+    // IPv4でなければ終了
+    if (args->daddr[0]!=2) return 0;
+
+    // Syntax: u64 bpf_get_current_pid_tgid(void)
+    // Return: current->tgid << 32 | current->pid
+    u32 pid=bpf_get_current_pid_tgid();
+
+    // ユーザ空間にポート番号とpidなどをoutput
+    bpf_trace_printk("dport =%d , (tgid << 32 | pid) = %lu, pid= %d\\n", args->dport, bpf_get_current_pid_tgid(), pid);
+    return 0;
+}
+""")
+
+# ヘッダのoutput
+print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "dport pid"))
+
+# eBPFからのoutputを受信してstdoutに出力するループ
+while 1:
+    try:
+        (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+    except ValueError:
+        continue
+    except KeyboardInterrupt:
+        # Ctrl-Cでループから脱出
+        exit()
+    printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+
+
+

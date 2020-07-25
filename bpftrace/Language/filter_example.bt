@@ -1,0 +1,17 @@
+#define FILTER_SIZE 1024
+//#define FILTER_SIZE 100
+
+BEGIN{
+  printf("I will watch vfs_read().\n");
+  printf("Please input Ctrl-C to finish this program.\n");
+}
+
+kprobe:vfs_read
+/ (comm == "bash") && (arg2 < FILTER_SIZE) /
+{
+  printf("%s read %d bytes\n", comm, arg2);
+}
+
+END{
+  printf("\nterminating to watch vfs_read().\n");
+}

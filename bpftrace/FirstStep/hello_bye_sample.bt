@@ -1,0 +1,12 @@
+BEGIN{
+  printf("I will watch execve() system call.\n");
+  printf("Please input Ctrl-C to finish this program.\n");
+}
+
+tracepoint:syscalls:sys_enter_execve {
+  printf("%s call execve()\n", comm);
+}
+
+END{
+  printf("\nterminating to watch execve().\n");
+}

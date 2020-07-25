@@ -1,0 +1,37 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのVMにロードさせるプログラムのCコードを文字列として定義
+bpf_text = """
+int func(struct pt_regs *ctx)
+{
+    bpf_trace_printk("hello execve.\\n");  // printf()のようなもの
+    return 0;
+};
+"""
+
+# initialize BPF
+b = BPF(text=bpf_text)                                # VMに文字列として定義したプログラムをロードさせる
+execve_fnname = b.get_syscall_fnname("execve")        # 監視するシステムコールを文字列から変換
+b.attach_kprobe(event=execve_fnname, fn_name="func")  # execveに実行される関数「func()」を割り当て
+
+# headerのプリントアウト
+print("              COMM-PID         OUTPUT");
+
+# filter and format output
+while 1:
+        # Read messages from kernel pipe
+        try:
+            # bpf_trace_printk()の出力を受信．
+            b.trace_print()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # キーボードインタラプトの時に無限ループから抜ける
+            exit()
+
+

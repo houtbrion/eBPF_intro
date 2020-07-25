@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+
+# カーネルがraw tracepointをサポートしているか否かを取得
+is_support_raw_tp = BPF.support_raw_tracepoint()
+
+# サポートしているか否かで出力を変更
+if is_support_raw_tp:
+    print("your kernel supports raw_tracepint()")
+else:
+    print("your kernel does not support raw_tracepint()")
+
+

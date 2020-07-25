@@ -1,0 +1,118 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+import os
+
+# カーネルバージョンが5.5以上の時に，eBPFプログラムの
+# 先頭に付加する「define文」
+header = """
+#define NEW_KERNEL
+"""
+# eBPFプログラム本体
+bpf_text = """
+#include <linux/sched.h>
+
+#ifndef NEW_KERNEL
+int syscall__execve(struct pt_regs *ctx)
+#else
+int syscall__execve(struct pt_regs *ctx, const char * filename)
+#endif
+{
+        // 「execve」の実行開始時刻(カーネル内部時計:uptimeのようなもの)を取得
+        u64 time = bpf_ktime_get_ns();
+        // 「execve」を実行したプロセスのpidとtgidを取得
+        u64 pgid = bpf_get_current_pid_tgid();
+        u32 pid = pgid;
+        u32 tgid = pgid >> 32;
+        // 「execve」を実行したプロセスのユーザIDとグループIDを取得
+        u64 ugid = bpf_get_current_uid_gid();
+        u32 uid = ugid;
+        u32 gid = ugid >> 32;
+        // 「execve」を実行したプロセスのプログラム名を取得
+        char comm[TASK_COMM_LEN];
+        bpf_get_current_comm(&comm, sizeof(comm));
+        // 「execve」を実行したプロセスのプログラム情報を構造体として取得
+        struct task_struct *t = (struct task_struct *)bpf_get_current_task();
+        // 32bitの疑似乱数を取得
+        u32 rval = bpf_get_prandom_u32();
+        // 各種の情報を順次出力
+        //  bpf_trace_printk()は引数を最大で3つ，文字列は1つしか取れないため分割して出力
+        bpf_trace_printk("start of execve time = %ld , comm = %s\\n",time, comm);
+        bpf_trace_printk("start of execve time = %ld, pid = %d , tgid = %d\\n",time, pid, tgid);
+        bpf_trace_printk("start of execve time = %ld, uid = %d , gid = %d\\n",time, uid, gid);
+        // プロセスの状態を出力
+        bpf_trace_printk("state of comm = %d\\n", t->state);
+        // 生成した乱数とその乱数のlog2()を出力
+        bpf_trace_printk("randval = %u , log2l(randval) = %d\\n", rval, bpf_log2l(rval));
+#ifdef NEW_KERNEL
+        // kernelバージョンが5.5以降の場合だけ使える機能
+        bpf_probe_read_kernel(&tgid, sizeof(tgid), &t->tgid);
+        bpf_probe_read_kernel(&pid, sizeof(pid), &t->pid);
+        bpf_trace_printk("pid = %d , tgid = %d\\n",pid, tgid);
+        // 「execve」を実行したプロセスのプログラム名(文字列)を別の変数にコピー(構造体など一般的な方法)
+        char comm2[TASK_COMM_LEN];
+        if (0 == bpf_probe_read_user(comm2, sizeof(comm2), (void *) filename)) {
+            bpf_trace_printk("comm2 = %s\\n", comm2);
+        } else {
+            bpf_trace_printk("fail to exec : bpf_probe_read_user()\\n");
+        }
+        // 「execve」を実行したプロセスのプログラム名(文字列)を別の変数にコピー(文字列専用の方式)
+        char comm3[TASK_COMM_LEN];
+        int rst = bpf_probe_read_user_str(comm3, sizeof(comm3), (void *) filename);
+        if ( rst > 0 ) {
+            bpf_trace_printk("comm3 = %s\\n", comm3);
+        } else if (rst < 0) {
+            bpf_trace_printk("fail to exec : bpf_probe_read_user_str()\\n");
+        }
+#endif /* NEW_KERNEL */
+        return 0;
+};
+"""
+
+# OSカーネルのバージョンを取得する関数
+def kernelVersion():
+    releaseNum = os.uname().release.split('.')
+    release = float(releaseNum[0] + '.' + releaseNum[1])
+    return release
+
+# OSカーネルのバージョンで，eBPFの対応レベルを判定する関数
+def ebpfLevel():
+    num = kernelVersion()
+    if  num >= 5.5 :
+        return 2
+    if  num >= 5.4 :
+        return 1
+    else:
+        return 0
+
+# OSカーネルのバージョンで，5.5以降で利用可能な機能を有効にするか否かを切り替え
+level = ebpfLevel()
+if level >= 2 :
+    bpf_text= header + bpf_text
+
+# eBPFのプログラム(文字列)をロードさせる
+b = BPF(text=bpf_text)
+
+# eBPFのVMをexecveのkprobeに割付け
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# header
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# eBPFからの出力(bpf_trace_printk())を受信してプリントアウトするループ
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt: # Ctrl-Cでループを抜ける
+            exit()
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+

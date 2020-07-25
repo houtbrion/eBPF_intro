@@ -1,0 +1,3 @@
+#include <foo.h>
+BEGIN { printf("Hello, World!\n"); }
+

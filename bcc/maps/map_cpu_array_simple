@@ -1,0 +1,68 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF ,utils
+from bcc.utils import printb
+
+# eBPFプログラムのソースを文字列として定義
+bpf_text = """
+#include <uapi/linux/ptrace.h>
+
+// カウンタ用の表を定義
+// CPU毎に要素を変える
+BPF_PERCPU_ARRAY(connect_cnt, long, 1);
+
+int kprobe__tcp_v4_connect(struct pt_regs *ctx)
+{
+        bpf_trace_printk("start of tcp4connect\\n");
+        int zero=0;
+        // 表の要素のうち，tcp_v4_connect()を実行したプロセスが
+        // 動かいているCPUのIDに対応したものが更新される
+        connect_cnt.increment(zero);
+        return 0;
+};
+"""
+
+# プログラムをVMにロードinitialize BPF
+b = BPF(text=bpf_text)
+
+# 表を取得
+connect_cnt=b["connect_cnt"]
+
+# ヘッダを印刷
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# eBPFの終了を受信してoutput
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # Ctrl-Cでループから脱出
+            break
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+print("")
+# 表の各要素の値を合計して出力
+val = connect_cnt.sum(0).value
+print("tcp connects total ", val , " times")
+
+# 表のクラスがサポートするメンバ関数は以下のファイルのクラス定義を参照
+# https://github.com/iovisor/bcc/blob/master/src/python/bcc/table.py
+# class PerCpuArray(ArrayBase):
+
+# 表の値の列だけを取り出し
+val = connect_cnt.getvalue(0)
+
+# 動作しているCPU数を取得
+num_cpus = len(utils.get_online_cpus())
+
+# 表の値をループで出力
+for i in range(num_cpus):
+    print("val[", i ,"] = ",val[i])
+
+

@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+b = BPF(text="""
+#define KBUILD_MODNAME "tcp_probe"
+#include <net/ipv6.h>
+
+// トレースポイントデータ用の型定義
+struct data_t {
+    u8 addr_size;
+    u8 saddr[sizeof(struct sockaddr_in6)];
+    u8 daddr[sizeof(struct sockaddr_in6)];
+    u16 sport;
+    u16 dport;
+    u32 mark;
+    u16 data_len;
+    u32 snd_nxt;
+    u32 snd_una;
+    u32 snd_cwnd;
+    u32 ssthresh;
+    u32 snd_wnd;
+    u32 srtt;
+    u32 rcv_wnd;
+    u64 sock_cookie;
+    u32 pid;
+    char comm[TASK_COMM_LEN];
+};
+
+// ユーザ空間に通知するためのI/Fを定義
+BPF_PERF_OUTPUT(events);
+
+// VMで動作するプログラムのソース
+TRACEPOINT_PROBE(tcp, tcp_probe) {
+    // args is from /sys/kernel/debug/tracing/events/tcp/tcp_probe/format
+    // check destination address is IPv4 or not.
+    if (args->daddr[0]!=2) return 0;
+
+    struct data_t data = {};
+    // set address size.
+    data.addr_size=sizeof(struct sockaddr_in6);
+
+    // copy address information
+    if (0!=bpf_probe_read(data.saddr, sizeof(struct sockaddr_in6), args->saddr)) return 0;
+    if (0!=bpf_probe_read(data.daddr, sizeof(struct sockaddr_in6), args->daddr)) return 0;
+    // copy data other than address information.
+    data.sport=args->sport;
+    data.dport=args->dport;
+    data.mark=args->mark;
+    data.data_len=args->data_len;
+    data.snd_nxt=args->snd_nxt;
+    data.snd_una=args->snd_una;
+    data.snd_cwnd=args->snd_cwnd;
+    data.ssthresh=args->ssthresh;
+    data.snd_wnd=args->snd_wnd;
+    data.srtt=args->srtt;
+    data.rcv_wnd=args->rcv_wnd;
+    data.sock_cookie=args->sock_cookie;
+    // get process id.
+    // Syntax: u64 bpf_get_current_pid_tgid(void)
+    // Return: current->tgid << 32 | current->pid
+    data.pid=bpf_get_current_pid_tgid();
+    // get process information.
+    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+    events.perf_submit(args, &data, sizeof(data));
+    return 0;
+}
+""")
+
+# ヘッダの出力
+print("%-16s %-6s %-6s %-6s" % ("COMM", "PID", "sport", "dport"))
+
+# eBPFからの通知を受けた時に通知の内容を処理する関数
+def print_event(cpu, data, size):
+    event = b["events"].event(data)
+    printb(b"%-16s %-6d %-6d %-6d" % (event.comm, event.pid, event.sport, event.dport))
+
+# eBPFからの通知を受けた際に，どの関数を呼び出すか(コールバック)を定義
+b["events"].open_perf_buffer(print_event)
+
+# 無限ループでeBPFからの通知を待つ
+while 1:
+    try:
+        b.perf_buffer_poll()
+    except KeyboardInterrupt:
+        # Ctrl-Cでループから脱出
+        exit()
+
+
+
+

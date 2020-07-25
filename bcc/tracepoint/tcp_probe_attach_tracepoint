@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのプログラム(文字列)をVMにロードする定義
+b = BPF(text="""
+#define KBUILD_MODNAME "tcp_probe"
+#include <net/ipv6.h>
+
+// トレースポイントデータ用の型定義
+struct tcp_probe_args {
+    u64 __unused__;
+    u8 saddr[sizeof(struct sockaddr_in6)];
+    u8 daddr[sizeof(struct sockaddr_in6)];
+    u16 sport;
+    u16 dport;
+    u32 mark;
+    u16 data_len;
+    u32 snd_nxt;
+    u32 snd_una;
+    u32 snd_cwnd;
+    u32 ssthresh;
+    u32 snd_wnd;
+    u32 srtt;
+    u32 rcv_wnd;
+    u64 sock_cookie;
+};
+
+// VMで動作するプログラム本体
+int print_tcp(struct tcp_probe_args * args) {
+    // args is from /sys/kernel/debug/tracing/events/tcp/tcp_probe/format
+    bpf_trace_printk("%d %d %d\\n", args->daddr[0], args->daddr[1], args->daddr[2]);
+    return 0;
+}
+""")
+
+# eBPFをtcp_probeのトレースポイントに割り付け
+b.attach_tracepoint(tp="tcp:tcp_probe", fn_name="print_tcp")
+
+# ヘッダ出力
+print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MSG"))
+
+# 無限ループでeBPFからの出力を受信してoutput
+while 1:
+    try:
+        (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+    except ValueError:
+        continue
+    except KeyboardInterrupt:
+        # Ctrl-Cでループから脱出
+        exit()
+    printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+
+
+

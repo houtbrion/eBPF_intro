@@ -1,0 +1,63 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+import time
+
+# eBPFのソースを文字列として定義
+bpf_text = """
+#include <linux/sched.h>
+// 監視対象のシステムコールを実行したプロセス名を格納するための変数型
+struct key_t {
+    char comm[TASK_COMM_LEN];
+};
+
+BPF_HASH(uidcnt,struct key_t);  // 表の定義
+
+int syscall__execve(struct pt_regs *ctx)
+{
+    struct key_t key = {};
+    // execveを呼び出したプロセス名を取得
+    bpf_get_current_comm(&key.comm, sizeof(key.comm));
+    u64 zero=0;
+    long long *value;
+    // execveを呼び出したプロセス名をキーとして表のエントリを取得
+    // もし，エントリが存在しない場合は変数zeroの値(ここでは0)で新規作成
+    value = uidcnt.lookup_or_try_init(&key, &zero);
+    if (value) {
+        // エントリが存在した(もしくは新規に作成できた)場合
+        (*value)++;
+        if ((*value) > 10 ) {
+            // 該当キーの表のエントリを削除
+            uidcnt.delete(&key);
+        }
+    }
+
+    return 0;
+};
+"""
+
+# eBPFのブログラムをロード
+b = BPF(text=bpf_text)
+# eBPFのプログラムをexecveのkprobeに割当て
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# 表の定義
+uidcnt = b.get_table("uidcnt")
+
+
+# eBPFの出力を受信して表示するループ
+while 1:
+    print("--- counter : program name-----");
+    try:
+        for k, v in sorted(uidcnt.items(), key=lambda uidcnt: uidcnt[1].value):
+            printb(b"%10d \"%s\"" % (v.value, k.comm))
+        print("---next round-----");
+        time.sleep(10)
+    except KeyboardInterrupt:
+        # Ctrl-Cでループを抜ける
+        exit()
+
+

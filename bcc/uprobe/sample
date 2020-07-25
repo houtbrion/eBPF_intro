@@ -1,0 +1,11 @@
+uprobe:BINARY_PATH:FUNC_NAME
+{
+	@start[pid,tid]=nsecs;
+	//printf("foo, %d, %lu\n",pid, nsecs);
+}
+uretprobe:BINARY_PATH:FUNC_NAME
+/@start[pid,tid]!=0/
+{
+	//printf("func, %d, %d,  %lu\n",pid, tid, nsecs-@start[pid,tid]);
+	printf("func, %d, %d, %d\n",pid, tid, (nsecs-@start[pid,tid])/1000000);
+}

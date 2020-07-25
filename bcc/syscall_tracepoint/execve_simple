@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのVMにロードさせるプログラムのCコードを文字列として定義
+bpf_text = """
+int syscall__execve(struct pt_regs *ctx)
+{
+	bpf_trace_printk("start of execve\\n");
+	return 0;
+};
+"""
+
+# VMに文字列として定義したプログラムをロードさせる
+b = BPF(text=bpf_text)
+
+# 監視するシステムコールを文字列から変換
+execve_fnname = b.get_syscall_fnname("execve")
+
+# eBPFのVMをkprobeのexecveに割り当て
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# headerの出力
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# 無限ループでeBPFの出力を受信する
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # Ctrl-Cでループから脱出
+            exit()
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+

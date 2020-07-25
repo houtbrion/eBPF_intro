@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+# Copyright (c) PLUMgrid, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+from bcc import BPF
+from time import sleep
+
+bpf_text="""
+#include <uapi/linux/ptrace.h>
+#include <linux/sched.h>
+
+struct key_t {
+    u32 prev_pid; // 直前に実行されていたプロセスのpid
+    u32 curr_pid; // 現在実行されているプロセスのpid
+};
+
+BPF_HASH(stats, struct key_t, u64, 1024);
+int count_sched(struct pt_regs *ctx, struct task_struct *prev) {
+    struct key_t key = {};
+    u64 zero = 0, *val;
+
+    key.curr_pid = bpf_get_current_pid_tgid(); // 現在のプロセスのpidを取得
+    key.prev_pid = prev->pid;                  // 直前のプロセスのpidを保存
+
+    // 表のエントリを取得(存在しなければ，0で作成)．
+    val = stats.lookup_or_try_init(&key, &zero);
+    // 表のエントリを更新する．
+    // map.increment(key)を使わずに実施
+    if (val) {
+        (*val)++;
+    }
+    return 0;
+}
+"""
+# テキストのプログラムをeBPFのソースコードとして設定
+b = BPF(text = bpf_text)
+
+# タスクスイッチ終了時の関数にeBPFのプログラムを割り当て
+b.attach_kprobe(event="finish_task_switch", fn_name="count_sched")
+
+# 10msのスリープを100回実行 (タスクスイッチをたくさん発生させる)
+for i in range(0, 100): sleep(0.01)
+
+# BPF_HASHの表であるstatsのkeyをkに，値をvに割り当てて繰り返し実行．
+for k, v in b["stats"].items():
+    print("task_switch[%5d->%5d]=%u" % (k.prev_pid, k.curr_pid, v.value))

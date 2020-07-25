@@ -1,0 +1,106 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# @lint-avoid-python-3-compatibility-imports
+#
+# opensnoop Trace open() syscalls.
+#           For Linux, uses BCC, eBPF. Embedded C.
+#
+#
+# Copyright (c) 2015 Brendan Gregg.
+# Licensed under the Apache License, Version 2.0 (the "License")
+#
+# 17-Sep-2015   Brendan Gregg   Created this.
+# 29-Apr-2016   Allan McAleavy  Updated for BPF_PERF_OUTPUT.
+# 08-Oct-2016   Dina Goldshtein Support filtering by PID and TID.
+# 28-Dec-2018   Tim Douglas     Print flags argument, enable filtering
+# 06-Jan-2019   Takuma Kume     Support filtering by UID
+
+from __future__ import print_function
+from bcc import BPF
+from bcc.utils import printb
+from datetime import datetime, timedelta
+import os
+
+# define BPF program
+bpf_text = """
+#include <linux/sched.h>
+
+// perf_submit()用のデータ型定義
+struct data_t {
+    u64 id;
+    u64 ts;
+    u32 uid;
+    int ret;
+    char comm[TASK_COMM_LEN];
+    char fname[NAME_MAX];
+    int flags; // EXTENDED_STRUCT_MEMBER
+};
+
+BPF_PERF_OUTPUT(events);
+
+KRETFUNC_PROBE(do_sys_open, int dfd, const char __user *filename, int flags, int mode, int ret)
+{
+    struct data_t data = {};
+    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+
+    u64 tsp = bpf_ktime_get_ns();
+
+    bpf_probe_read_user(&data.fname, sizeof(data.fname), (void *)filename);
+    data.id    = bpf_get_current_pid_tgid();
+    data.ts    = tsp / 1000;
+    data.uid   = bpf_get_current_uid_gid();
+    data.flags = flags; // EXTENDED_STRUCT_MEMBER
+    data.ret   = ret;
+
+    events.perf_submit(ctx, &data, sizeof(data));
+
+    return 0;
+}
+"""
+
+is_support_kfunc = BPF.support_kfunc()
+if not is_support_kfunc:
+    print("kfunc is not supported.")
+    exit()
+
+# initialize BPF
+b = BPF(text=bpf_text)
+
+initial_ts = 0
+
+# header
+print("%-6s %-16s %4s %3s " %
+      ("PID", "COMM", "FD", "ERR"), end="")
+print("PATH")
+
+# process event
+def print_event(cpu, data, size):
+    event = b["events"].event(data)
+    global initial_ts
+
+    # split return value into FD and errno columns
+    if event.ret >= 0:
+        fd_s = event.ret
+        err = 0
+    else:
+        fd_s = -1
+        err = - event.ret
+
+    if not initial_ts:
+        initial_ts = event.ts
+
+    printb(b"%-6d %-16s %4d %3d " %
+           (event.id >> 32,
+            event.comm, fd_s, err), nl="")
+
+    printb(b'%s' % event.fname)
+
+# loop with callback to print_event
+b["events"].open_perf_buffer(print_event, page_cnt=64)
+start_time = datetime.now()
+duration=timedelta(seconds=int(10))
+while datetime.now() - start_time < duration:
+    try:
+        b.perf_buffer_poll()
+    except KeyboardInterrupt:
+        exit()

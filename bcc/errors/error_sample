@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのプログラムを文字列として定義
+bpf_text = """
+// 現在存在するライセンスは以下のURLに存在
+// https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/linux/license.h
+// GPL非互換なライセンス
+//#define BPF_LICENSE Proprietary
+//
+// GPLに互換のライセンス
+//#define BPF_LICENSE GPL
+//#define BPF_LICENSE GPL v2
+//#define BPF_LICENSE GPL and additional rights
+//#define BPF_LICENSE Dual BSD/GPL
+//#define BPF_LICENSE Dual MIT/GPL
+//#define BPF_LICENSE Dual MPL/GPL
+
+
+int syscall__execve(struct pt_regs *ctx)
+{
+	bpf_trace_printk("start of execve\\n");
+	return 0;
+};
+"""
+
+# 定義したソースをeBPFのVMにロード
+b = BPF(text=bpf_text)
+
+# eBPFのVMをkprobeのexecveに割当て
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# ヘッダの出力
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# eBPFのプログラムの出力を無限ループで回って受信して出力
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # Ctrl-Cの入力でループから脱出
+            exit()
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+

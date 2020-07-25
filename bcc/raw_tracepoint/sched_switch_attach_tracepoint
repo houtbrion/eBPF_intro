@@ -1,0 +1,61 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+#from __future__ import print_function
+from bcc import BPF
+from bcc.utils import printb
+
+# カーネルがraw tracepointをサポートしているか否かを取得
+is_support_raw_tp = BPF.support_raw_tracepoint()
+# サポートしているか否かで出力を変更
+if is_support_raw_tp:
+    print("your kernel supports raw_tracepint()")
+else:
+    print("your kernel does not support raw_tracepint()")
+    exit()
+
+# eBPFのプログラムのCコードを文字列として与えてロードさせる
+bpf_text="""
+#include <linux/sched.h>
+int do_trace(struct bpf_raw_tracepoint_args * ctx)
+{
+    // sched_switchのtracepointで取得可能なデータは以下の通り
+    // TP_PROTO(bool preempt, struct task_struct *prev, struct task_struct *next)
+    // 第2,3引数(struct task_struct *prev, struct task_struct *next)を取得
+    struct task_struct *prev = (struct task_struct *)ctx->args[1];
+    struct task_struct *next= (struct task_struct *)ctx->args[2];
+
+    // データを引数からローカル変数にコピー
+    s32 prev_tgid, next_tgid;
+    bpf_probe_read(&prev_tgid, sizeof(prev->tgid), &prev->tgid);
+    bpf_probe_read(&next_tgid, sizeof(next->tgid), &next->tgid);
+
+    // データの写しをユーザ空間に出力
+    bpf_trace_printk("%d -> %d\\n", prev_tgid, next_tgid);
+    return 0;
+}
+"""
+
+# eBPFのCコードをVMにロード
+b = BPF(text=bpf_text)
+
+# sched_switchのraw tracepoinitにVMを割付け
+b.attach_raw_tracepoint("sched_swtich", "do_trace")
+
+# ヘッダの出力
+print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MSG"))
+
+# eBPFのプログラムが出力する内容(bpf_trace_printk())を無限ループで受信して出力
+while 1:
+    try:
+        (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+    except ValueError:
+        continue
+    except KeyboardInterrupt:
+        # Ctrl-Cが入力された場合はループから抜け出す
+        exit()
+    printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+
+
+
+

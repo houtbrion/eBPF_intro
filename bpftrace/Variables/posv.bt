@@ -1,0 +1,6 @@
+#!/usr/local/bin/bpftrace
+#
+
+BEGIN{
+  printf("$1 = %u, $2 = %u, $# = %u\n",$1,$2,$#);
+}

@@ -1,0 +1,61 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from bcc import BPF
+from bcc.utils import printb
+
+# eBPFのVMにロードさせるプログラムのCコードを文字列として定義
+bpf_text = """
+#include <linux/sched.h>
+
+// 取得したデータを一時的に可能するための構造体定義
+struct data_t {
+    u32 pid;
+    char comm[TASK_COMM_LEN];
+    u64 time;
+};
+
+int syscall__execve(struct pt_regs *ctx)
+{
+    struct data_t data = {};
+    // カーネル内部時刻を取得
+    data.time = bpf_ktime_get_ns();
+
+    // プロセスIDを取得
+    u64 pgid = bpf_get_current_pid_tgid();
+    data.pid = pgid;    // 下32bitがpid
+
+    // execveを実行したプロセスの名前を取得
+    bpf_get_current_comm(&data.comm, sizeof(data.comm));
+
+    // 取得した情報をユーザ空間に通知
+    bpf_trace_printk("start of execve time = %ld , pid = %u, comm = %s\\n",data.time, data.pid, data.comm);
+    return 0;
+};
+"""
+
+# 上で定義した文字列のCコードをeBPFのVMに与える
+b = BPF(text=bpf_text)
+
+# eBPFのVMのプログラムをkprobeのexecveに割付け
+execve_fnname = b.get_syscall_fnname("execve")
+b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+
+# ヘッダの出力
+print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+
+# eBPFのプログラムが出力する内容(bpf_trace_printk())を無限ループで受信して出力
+while 1:
+        # Read messages from kernel pipe
+        try:
+            (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+        except ValueError:
+            # Ignore messages from other tracers
+            continue
+        except KeyboardInterrupt:
+            # Ctrl-Cが入力された場合はループから抜け出す
+            exit()
+
+        printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+
+
