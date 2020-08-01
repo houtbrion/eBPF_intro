@@ -6,8 +6,8 @@ kprobe/kretprobeは監視対象の関数の実行開始直後と終了直前に�
 kfunc/kretfuncは監視対象関数の実行直前と終了直後に実行されるもの．
 
 ## kfunc利用可能性の確認
-kfuncはカーネルのビルドオプションで<code>CONFIG_DEBUG_INFO_BTF</code>が選択(y)になっており，
-
+kfuncはカーネルのビルドオプションで<code>CONFIG_DEBUG_INFO_BTF</code>が選択(y)になっている
+ことが条件である．ただし，
 ネットでの投稿を見ると「普通のディストリビューションではこの項目はnです．」ということなので，
 自分のUbunu20.04の/boot/config-XXXを見ると，やはり「n」になっていた．
 20.04で開発者向けに提供されているカーネルバージョン5.6も同じく，
@@ -16,20 +16,23 @@ kfuncはカーネルのビルドオプションで<code>CONFIG_DEBUG_INFO_BTF</c
 さらに，<code>CONFIG_DEBUG_INFO_BTF</code>をONにしたカーネルを
 インストールしても，kernel用のデバッグ情報のファイルが存在する
 必要がある．このファイルを利用可能にするためには，
-関連ツールを最新バージョンに上げた後でで，カーネルの再コンパイルを
+関連ツールを最新バージョンに上げた後で，カーネルの再コンパイルを
 行う必要がある．
+詳細は，[本ドキュメントのインストールの説明][install]を参照していただきたい．
 
 実際にデバッグ情報が存在するか否かを確認するのは以下の手段で可能．
 ```
-root@ebpf:/sys/kernel/btf# strings vmlinux |grep bpf_prog_put
-root@ebpf:/sys/kernel/btf#
+# cd /sys/kernel/btf
+# strings vmlinux |grep bpf_prog_put
+#
 ```
 上の実行結果は，kfuncがサポートされていない環境で実行した場合で，
 以下がkfunc利用可能な環境の実行結果．
 ```
-root@ebpf:/sys/kernel/btf# strings vmlinux |grep bpf_prog_put
+# cd /sys/kernel/btf
+# strings vmlinux |grep bpf_prog_put
 bpf_prog_put
-root@ebpf:/sys/kernel/btf#
+#
 ```
 
 カーネルのconfigや/sysを調査することなく判定する方法があり，
@@ -110,3 +113,6 @@ PID    COMM               FD ERR PATH
 704    irqbalance          6   0 /proc/irq/15/smp_affinity
 #
 ```
+
+<!-- 参考文献リスト -->
+[install]: <../../INSTALL.md> "インストールドキュメント"

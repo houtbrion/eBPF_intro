@@ -4,15 +4,61 @@
 ## バージョン表示 : <code>-V</code>もしくは<code>--version</code>
 ```
 bash$ bpftrace --version
-bpftrace v0.10.0-184-g71754
+bpftrace v0.9.4
 bash$
 ```
 
 ## ヘルプ : 無引数, <code>-h</code>もしくは<code>--help</code>
-以下のヘルプはversion0.10.0-184-g71754のもの．
+無引数で起動するなどすると，コマンドラインの引数などが表示される．
 ```
 bash$ bpftrace --version
-bpftrace v0.10.0-184-g71754
+bpftrace v0.9.4
+bash$ bpftrace
+USAGE:
+    bpftrace [options] filename
+    bpftrace [options] -e 'program'
+
+OPTIONS:
+    -B MODE        output buffering mode ('full', 'none')
+    -f FORMAT      output format ('text', 'json')
+    -o file        redirect bpftrace output to file
+    -d             debug info dry run
+    -dd            verbose debug info dry run
+    -b             force BTF (BPF type format) processing
+    -e 'program'   execute this program
+    -h, --help     show this help message
+    -I DIR         add the directory to the include search path
+    --include FILE add an #include file before preprocessing
+    -l [search]    list probes
+    -p PID         enable USDT probes on PID
+    -c 'CMD'       run CMD and enable USDT probes on resulting process
+    --unsafe       allow unsafe builtin functions
+    -v             verbose messages
+    --info         Print information about kernel BPF support
+    -V, --version  bpftrace version
+
+ENVIRONMENT:
+    BPFTRACE_STRLEN           [default: 64] bytes on BPF stack per str()
+    BPFTRACE_NO_CPP_DEMANGLE  [default: 0] disable C++ symbol demangling
+    BPFTRACE_MAP_KEYS_MAX     [default: 4096] max keys in a map
+    BPFTRACE_CAT_BYTES_MAX    [default: 10k] maximum bytes read by cat builtin
+    BPFTRACE_MAX_PROBES       [default: 512] max number of probes
+    BPFTRACE_LOG_SIZE         [default: 409600] log size in bytes
+    BPFTRACE_NO_USER_SYMBOLS  [default: 0] disable user symbol resolution
+    BPFTRACE_VMLINUX          [default: None] vmlinux path used for kernel symbol resolution
+    BPFTRACE_BTF              [default: None] BTF file
+
+EXAMPLES:
+bpftrace -l '*sleep*'
+    list probes containing "sleep"
+bpftrace -e 'kprobe:do_nanosleep { printf("PID %d sleeping...\n", pid); }'
+    trace processes calling sleep
+bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
+    count syscalls by process name
+bash$
+```
+以下のヘルプはversion0.10.0-184-g71754のもので機能が増えている．
+```
 bash$ bpftrace
 USAGE:
     bpftrace [options] filename
@@ -135,7 +181,15 @@ bash$
 ```
 
 ## bpftraceで利用可能なプローブの取得 : <code>-l [search]</code>
-カーネルを5.6に上げた環境でbpftraceで利用可能なプローブの総数は以下のように4万9千個近くとなる．
+Ubuntu20.04のカーネルでは，4万9千個近くのプローブ可能な場所がある．
+bash$uname -a
+Linux ebpf 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+bash$ sudo bpftrace -l | wc -l
+49703
+bash$
+```
+
+カーネルを5.6に上げた環境では多少減っている．
 ```
 bash$ uname -a
 Linux ebpf 5.6.18 #1 SMP Wed Jul 1 00:05:32 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux

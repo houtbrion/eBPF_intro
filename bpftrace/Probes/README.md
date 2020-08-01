@@ -253,13 +253,13 @@ open path: smp_affinity
 利用しているOS(カーネル)とbpftraceがBTF (BPF Type Format)を
 サポートしている場合，インクルードしなくても動作する．
 ```
-# bpftrace -e 'kprobe:vfs_open { printf("open path: %s\n", \
+# bpftrace -e 'kprobe:vfs_open { printf("open path: %s\n", 
                                  str(((struct path *)arg0)->dentry->d_name.name)); }'
 ```
 
 #### BTFが動作する要件
 [公式リファレンスガイド][ref-guide]では，以下の要件を満たしている場合に
-BTFの機能を利用できることになっているが，手元で再現できていない．
+BTFの機能を利用できることになっている．
 - カーネルバージョン4.18以上で，コンパイル時に<code>CONFIG_DEBUG_INFO_BTF</code>が有効
 - カーネルコンパイル時にpahole1.13より新しいバージョンを利用している
 - bpftraceが0.93より新しく，ビルド時にlibbpfのバージョンが0.0.4より新しいものを利用している．
@@ -267,6 +267,56 @@ BTFの機能を利用できることになっているが，手元で再現で�
 なお，多くのディストリビューション(Ubuntu, Debian, CentOS)で
 提供されているカーネルは<code>CONFIG_DEBUG_INFO_BTF</code>は
 OFFでコンパイルされている．
+
+#### 手元での動作状況
+手元の環境でカーネルをコンフィグの変更とコンパイルやカーネルソースを
+より新しいものに変更して繰り返しても動作させることができていない．
+
+```
+# bpftrace -kk -b -e 'kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }'
+stdin:1:45-66: ERROR: Unknown struct/union: 'struct path'
+kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }
+                                            ~~~~~~~~~~~~~~~~~~~~~
+#
+```
+本来動作する環境であれば，以下のコマンドで型定義が取得できるはずだが，出力がないということは
+情報をカーネルから取得できていない．
+```
+# bpftrace -lv 'struct path'
+#
+```
+
+ただし，カーネルが問題ではなく，paholeコマンドを使うと型の情報は取得できている．
+```
+# pahole|head -15
+struct list_head {
+        struct list_head *         next;                 /*     0     8 */
+        struct list_head *         prev;                 /*     8     8 */
+
+        /* size: 16, cachelines: 1, members: 2 */
+        /* last cacheline: 16 bytes */
+};
+struct hlist_head {
+        struct hlist_node *        first;                /*     0     8 */
+
+        /* size: 8, cachelines: 1, members: 1 */
+        /* last cacheline: 8 bytes */
+};
+struct hlist_node {
+        struct hlist_node *        next;                 /*     0     8 */
+#
+```
+ちなみに，以下はpaholeの出力から該当部分を抜き出したもの．
+```
+struct path {
+        struct vfsmount *          mnt;                  /*     0     8 */
+        struct dentry *            dentry;               /*     8     8 */
+
+        /* size: 16, cachelines: 1, members: 2 */
+        /* last cacheline: 16 bytes */
+};
+```
+このことから，bpftraceのBTFの実装がうまく動いていないように思われる．
 
 ## ユーザアプリ内部を監視するためのprobe : <code>uprobe</code>, <code>uretprobe</code>
 uprobe/uretprobeはユーザアプリの監視を実現することができるが，[公式リファレンスガイド][ref-guide]は共有ライブラリの監視しか
