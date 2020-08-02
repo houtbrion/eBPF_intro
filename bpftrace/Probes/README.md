@@ -317,6 +317,8 @@ struct path {
 };
 ```
 このことから，bpftraceのBTFの実装がうまく動いていないように思われる．
+BTF機能がビルドでうまく含んでくれないのがissueとして挙げられている．
+- https://github.com/iovisor/bpftrace/issues/1422
 
 ## ユーザアプリ内部を監視するためのprobe : <code>uprobe</code>, <code>uretprobe</code>
 uprobe/uretprobeはユーザアプリの監視を実現することができるが，[公式リファレンスガイド][ref-guide]は共有ライブラリの監視しか
