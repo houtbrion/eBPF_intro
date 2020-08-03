@@ -29,8 +29,8 @@ int printret(struct pt_regs *ctx) {
 b = BPF(text=bpf_text)
 
 # VMのプログラムを監視対象に割り付け
-b.attach_uprobe(name="/home/noro/devel/tracepoint/uprobe/target-sample", sym="func", fn_name="printarg")
-b.attach_uretprobe(name="/home/noro/devel/tracepoint/uprobe/target-sample", sym="func", fn_name="printret")
+b.attach_uprobe(name="./target-sample", sym="func", fn_name="printarg")
+b.attach_uretprobe(name="./target-sample", sym="func", fn_name="printret")
 
 # header出力
 print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MESSAGE"))
