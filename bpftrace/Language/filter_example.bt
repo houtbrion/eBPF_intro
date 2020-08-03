@@ -1,4 +1,4 @@
-#define FILTER_SIZE 1024
+//#define FILTER_SIZE 1024
 //#define FILTER_SIZE 100
 
 BEGIN{
