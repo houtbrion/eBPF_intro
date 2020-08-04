@@ -54,6 +54,7 @@ raw_tracepointと同じことをkprobeで行う方法を読み取ることが
 書き換えて貰えれば他の構造体メンバを使う例も実現できる．
 
 ## attach_raw_tracepoint()の利用
+0.9.4はだめ
 <code>RAW_TRACEPOINT_PROBE</code>マクロを使わずに，<code>attach_raw_tracepoint()</code>を使おうと
 すると(本ディレクトリの
 <a href="sched_switch_attach_tracepoint">sched_switch_attach_tracepoint</a>)，

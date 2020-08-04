@@ -17,7 +17,9 @@ interval:hz:rate
 
 > This fires on one CPU only, and can be used for generating per-interval output.
 
-[ref-guide-interval][ref-guide-interval]のサンプルスクリプトは，バグありなので以下に
+[ref-guide-interval][ref-guide-interval]のサンプルスクリプトは，
+0.9.4では動くが，0.10以上のバージョンでは，
+バグありなので以下に
 動作する例を示す．下のスクリプトは1秒間隔で<code>sys_enter</code>が実行された回数を出力する．
 ```
 # bpftrace  -e 'tracepoint:raw_syscalls:sys_enter { @syscalls = count(); } interval:s:1 { print(@syscalls); zero(@syscalls); }'
@@ -34,6 +36,7 @@ Attaching 2 probes...
 ```
 [ref-guide-interval][ref-guide-interval]のサンプルスクリプトは上の例の<code>zero()</code>の部分が
 <code>clear()</code>となっており，これが実行できないというエラーメッセージが出力される．
+このバージョンは，0.9.4でも動く．
 
 ## 周期的に性能データを取得するためのイベント用probe : <code>profile</code>
 文法:
@@ -79,9 +82,96 @@ sleep by 1396
 sleep by 3669
 ^C
 ```
+ubuntuのノーマル環境は不可
+```
+oot@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# bpftrace -e 'kprobe:do_sys_open+9 { printf("in here\n"); }'
+Attaching 1 probe...
+Can't check if kprobe is in proper place (compiled without (k|u)probe offset support): /usr/lib/debug/boot/vmlinux-5.4.0-42-generic:do_sys_open+9
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+```
+
+
+```
+root@venus:/etc/apt/sources.list.d# cat ddebs.list
+deb http://ddebs.ubuntu.com focal main restricted universe multiverse
+deb http://ddebs.ubuntu.com focal-updates main restricted universe multiverse
+#deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted universe multiverse
+
+root@venus:/etc/apt/sources.list.d#
+```
+
+```
+apt install ubuntu-dbgsym-keyring
+```
+
+```
+apt-get update
+```
+
+```
+# apt install linux-image-$(uname -r)-dbgsym
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following additional packages will be installed:
+  linux-image-unsigned-5.4.0-42-generic-dbgsym
+The following NEW packages will be installed:
+  linux-image-5.4.0-42-generic-dbgsym
+  linux-image-unsigned-5.4.0-42-generic-dbgsym
+0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+Need to get 963 MB of archives.
+After this operation, 6,880 MB of additional disk space will be used.
+Do you want to continue? [Y/n]y
+Get:1 http://ddebs.ubuntu.com focal-updates/main amd64 linux-image-unsigned-5.4.0-42-generic-dbgsym amd64 5.4.0-42.46 [963 MB]
+Get:2 http://ddebs.ubuntu.com focal-updates/main amd64 linux-image-5.4.0-42-generic-dbgsym amd64 5.4.0-42.46 [15.0 kB]
+Fetched 963 MB in 1h 23min 20s (193 kB/s)
+Selecting previously unselected package linux-image-unsigned-5.4.0-42-generic-dbgsym.
+(Reading database ... 151517 files and directories currently installed.)
+Preparing to unpack .../linux-image-unsigned-5.4.0-42-generic-dbgsym_5.4.0-42.46_amd64.ddeb ...
+Unpacking linux-image-unsigned-5.4.0-42-generic-dbgsym (5.4.0-42.46) ...
+Selecting previously unselected package linux-image-5.4.0-42-generic-dbgsym.
+Preparing to unpack .../linux-image-5.4.0-42-generic-dbgsym_5.4.0-42.46_amd64.ddeb ...
+Unpacking linux-image-5.4.0-42-generic-dbgsym (5.4.0-42.46) ...
+Setting up linux-image-unsigned-5.4.0-42-generic-dbgsym (5.4.0-42.46) ...
+Setting up linux-image-5.4.0-42-generic-dbgsym (5.4.0-42.46) ...
+#
+```
 
 文法のところで示されているように，監視対象を関数だけでなく，関数の入り口からのオフセットで
 指定することができる．[ref-guide][ref-guide]の例を手元の環境で実行した例を以下に示す．
+
+```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# gdb -q /usr/lib/debug/boot/vmlinux-`uname -r` --ex 'disassemble do_sys_open'
+Reading symbols from /usr/lib/debug/boot/vmlinux-5.4.0-42-generic...
+Dump of assembler code for function do_sys_open:
+   0xffffffff812d9740 <+0>:     callq  0xffffffff81c01950 <__fentry__>
+   0xffffffff812d9745 <+5>:     push   %rbp
+   0xffffffff812d9746 <+6>:     mov    %rsp,%rbp
+   0xffffffff812d9749 <+9>:     push   %r15
+   0xffffffff812d974b <+11>:    push   %r14
+   0xffffffff812d974d <+13>:    push   %r13
+   0xffffffff812d974f <+15>:    mov    %edx,%r13d
+   0xffffffff812d9752 <+18>:    push   %r12
+   0xffffffff812d9754 <+20>:    mov    %edi,%r12d
+   0xffffffff812d9757 <+23>:    mov    %rsi,%rdi
+   0xffffffff812d975a <+26>:    push   %rbx
+   0xffffffff812d975b <+27>:    mov    %ecx,%ebx
+   0xffffffff812d975d <+29>:    sub    $0x38,%rsp
+   0xffffffff812d9761 <+33>:    mov    %gs:0x28,%rax
+   0xffffffff812d976a <+42>:    mov    %rax,-0x30(%rbp)
+   0xffffffff812d976e <+46>:    xor    %eax,%eax
+   0xffffffff812d9770 <+48>:    mov    %edx,%eax
+   0xffffffff812d9772 <+50>:    and    $0x3,%eax
+   0xffffffff812d9775 <+53>:    movzbl -0x7dc91c25(%rax),%edx
+   0xffffffff812d977c <+60>:    mov    %ecx,%eax
+   0xffffffff812d977e <+62>:    mov    $0x0,%ecx
+--Type <RET> for more, q to quit, c to continue without paging--q
+Quit
+(gdb) quit
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+# bpftrace -e 'kprobe:do_sys_open+9 { printf("in here\n"); }'
+```
+
 ```
 # gdb -q /usr/lib/debug/boot/vmlinux-`uname -r` --ex 'disassemble do_sys_open'
 Reading symbols from /usr/lib/debug/boot/vmlinux-5.7.0-rc7+...
@@ -149,11 +239,18 @@ arg0, arg1, ..., argN
 利用して，その第2引数と第3引数を参照しているが，手元の環境(カーネルバージョン5.6.18)では以下のインクルードファイルに
 定義が存在する．
 ```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# ls /usr/src/linux-headers-5.4.0-42-generic/include/linux/syscalls.h
+/usr/src/linux-headers-5.4.0-42-generic/include/linux/syscalls.h
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+
 /usr/src/linux-headers-5.6.18/include/linux/syscalls.h
 ```
 このインクルードファイルの中で<code>do_sys_open()</code>は以下のように宣言されており，
 第2引数がオープンするファイル名(型は文字列)，第3引数がフラグ(型はint)となっている．
 ```
+extern long do_sys_open(int dfd, const char __user *filename, int flags,
+                        umode_t mode);
+
 extern long do_sys_open(int dfd, const char __user *filename, int flags,
                         umode_t mode);
 ```
@@ -257,68 +354,8 @@ open path: smp_affinity
                                  str(((struct path *)arg0)->dentry->d_name.name)); }'
 ```
 
-#### BTFが動作する要件
-[公式リファレンスガイド][ref-guide]では，以下の要件を満たしている場合に
-BTFの機能を利用できることになっている．
-- カーネルバージョン4.18以上で，コンパイル時に<code>CONFIG_DEBUG_INFO_BTF</code>が有効
-- カーネルコンパイル時にpahole1.13より新しいバージョンを利用している
-- bpftraceが0.93より新しく，ビルド時にlibbpfのバージョンが0.0.4より新しいものを利用している．
-
-なお，多くのディストリビューション(Ubuntu, Debian, CentOS)で
-提供されているカーネルは<code>CONFIG_DEBUG_INFO_BTF</code>は
-OFFでコンパイルされている．
-
-#### 手元での動作状況
-手元の環境でカーネルをコンフィグの変更とコンパイルやカーネルソースを
-より新しいものに変更して繰り返しても動作させることができていない．
-
-```
-# bpftrace -kk -b -e 'kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }'
-stdin:1:45-66: ERROR: Unknown struct/union: 'struct path'
-kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }
-                                            ~~~~~~~~~~~~~~~~~~~~~
-#
-```
-本来動作する環境であれば，以下のコマンドで型定義が取得できるはずだが，出力がないということは
-情報をカーネルから取得できていない．
-```
-# bpftrace -lv 'struct path'
-#
-```
-
-ただし，カーネルが問題ではなく，paholeコマンドを使うと型の情報は取得できている．
-```
-# pahole|head -15
-struct list_head {
-        struct list_head *         next;                 /*     0     8 */
-        struct list_head *         prev;                 /*     8     8 */
-
-        /* size: 16, cachelines: 1, members: 2 */
-        /* last cacheline: 16 bytes */
-};
-struct hlist_head {
-        struct hlist_node *        first;                /*     0     8 */
-
-        /* size: 8, cachelines: 1, members: 1 */
-        /* last cacheline: 8 bytes */
-};
-struct hlist_node {
-        struct hlist_node *        next;                 /*     0     8 */
-#
-```
-ちなみに，以下はpaholeの出力から該当部分を抜き出したもの．
-```
-struct path {
-        struct vfsmount *          mnt;                  /*     0     8 */
-        struct dentry *            dentry;               /*     8     8 */
-
-        /* size: 16, cachelines: 1, members: 2 */
-        /* last cacheline: 16 bytes */
-};
-```
-このことから，bpftraceのBTFの実装がうまく動いていないように思われる．
-BTF機能がビルドでうまく含んでくれないのがissueとして挙げられている．
-- https://github.com/iovisor/bpftrace/issues/1422
+ただし，コマンドラインのところでも述べたが，現状，bpftraceのビルドの仕組みのbugのため，
+BTFが動作しなくなっている．
 
 ## ユーザアプリ内部を監視するためのprobe : <code>uprobe</code>, <code>uretprobe</code>
 uprobe/uretprobeはユーザアプリの監視を実現することができるが，[公式リファレンスガイド][ref-guide]は共有ライブラリの監視しか
@@ -443,6 +480,20 @@ Attaching 2 probes...
 ```
 
 ### インデックスの指定
+Ubuntuのノーマル環境では動かない．
+
+```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# bpftrace -e 'uprobe:./target-sample:func+4
+> {
+>         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid
+> , tid, arg0);
+> }'
+Attaching 1 probe...
+Can't check if uprobe is in proper place (compiled without (k|u)probe offset support): ./target-sample:func+4
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+```
+
+
 kprobeの場合と同じく，uprobeでも実行開始から実行が少し進んだ場所を監視することができる．
 
 まず，監視対象のアプリをディスアセンブルして，その出力から監視対象の関数を探す．
@@ -470,7 +521,7 @@ Disassembly of section .init:
 この出力結果から，最初の<code>push</code>の部分のインデックス値は<code>0x118d-0x1189</code>から
 4であることがわかる．この値を用いてインデックスを指定すると以下のような出力となる．
 ```
-# bpftrace -e 'uprobe:/home/noro/devel/bpftrace-doc/Probes/target-sample:func+4
+# bpftrace -e 'uprobe:./target-sample:func+4
 {
         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid
 , tid, arg0);
@@ -525,6 +576,14 @@ Attaching 1 probe...
 読んで理解するのに困難はないはずである．
 
 ## <code>tracepoint</code>
+
+```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# uname -r
+5.4.0-42-generic
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# /usr/sbin/tplist-bpfcc |wc -l
+1601
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+```
 手元の環境(カーネルバージョン5.7RC)で1520個のトレースポイントが存在している．これは<code>tplist</code>コマンドで
 取得可能．ただし，<code>tplist</code>コマンドはbccをインストールしている必要がある．
 ```
@@ -589,6 +648,40 @@ irqbalance /proc/irq/0/smp_affinity
 [リファレンスガイド][ref-guide]はなんの説明もなく，いきなり<code>/sys</code>ファイルシステムを
 参照しているが，<code>/sys/kernel/debug/tracing/events</code>に<code>tracepoint</code>の
 タイプがディレクトリになっている．
+
+5.4.0
+```
+# cd /sys/kernel/debug/tracing/events
+root@venus:/sys/kernel/debug/tracing/events# ls
+alarmtimer    gpio          msr             signal
+block         header_event  napi            skb
+bpf_test_run  header_page   neigh           smbus
+bridge        huge_memory   net             sock
+btrfs         hwmon         nmi             spi
+cgroup        hyperv        oom             swiotlb
+clk           i2c           page_isolation  sync_trace
+cma           initcall      pagemap         syscalls
+compaction    intel_iommu   page_pool       task
+cpuhp         iocost        percpu          tcp
+cros_ec       iommu         power           thermal
+devfreq       irq           printk          thermal_power_allocator
+devlink       irq_matrix    qdisc           timer
+dma_fence     irq_vectors   random          tlb
+drm           jbd2          ras             udp
+enable        kmem          raw_syscalls    vmscan
+exceptions    kvm           rcu             vsyscall
+ext4          kvmmmu        regmap          wbt
+fib           libata        regulator       workqueue
+fib6          mce           resctrl         writeback
+filelock      mdio          rpm             x86_fpu
+filemap       migrate       rseq            xdp
+fs            mmc           rtc             xen
+fs_dax        module        sched           xhci-hcd
+ftrace        mpx           scsi
+root@venus:/sys/kernel/debug/tracing/events#
+```
+
+5.6.18
 ```
 # cd /sys/kernel/debug/tracing/events
 # ls
@@ -613,6 +706,15 @@ fib           iommu         neigh        regulator       tcp
 最初の例では，<code>block</code>ディレクトリを<code>ls</code>すると，
 トレースポイントの一覧を得ることができる．
 ```
+root@venus:/sys/kernel/debug/tracing/events# ls block
+block_bio_backmerge   block_bio_remap     block_rq_insert   block_split
+block_bio_bounce      block_dirty_buffer  block_rq_issue    block_touch_buffer
+block_bio_complete    block_getrq         block_rq_remap    block_unplug
+block_bio_frontmerge  block_plug          block_rq_requeue  enable
+block_bio_queue       block_rq_complete   block_sleeprq     filter
+root@venus:/sys/kernel/debug/tracing/events#
+```
+```
 # ls block
 block_bio_backmerge   block_bio_remap     block_rq_insert   block_split
 block_bio_bounce      block_dirty_buffer  block_rq_issue    block_touch_buffer
@@ -625,6 +727,29 @@ block_bio_queue       block_rq_complete   block_sleeprq     filter
 最後に，利用するトレースポイントで参照できる引数の一覧は，監視対象の
 トレースポイントディレクトリ内の<code>format</code>ファイルを見ると
 引数が読み取れる．
+
+```
+root@venus:/sys/kernel/debug/tracing/events# cd block/block_rq_insert
+root@venus:/sys/kernel/debug/tracing/events/block/block_rq_insert# cat format
+name: block_rq_insert
+ID: 1133
+format:
+        field:unsigned short common_type;       offset:0;       size:2; signed:0;
+        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+        field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+        field:int common_pid;   offset:4;       size:4; signed:1;
+
+        field:dev_t dev;        offset:8;       size:4; signed:0;
+        field:sector_t sector;  offset:16;      size:8; signed:0;
+        field:unsigned int nr_sector;   offset:24;      size:4; signed:0;
+        field:unsigned int bytes;       offset:28;      size:4; signed:0;
+        field:char rwbs[8];     offset:32;      size:8; signed:1;
+        field:char comm[16];    offset:40;      size:16;        signed:1;
+        field:__data_loc char[] cmd;    offset:56;      size:4; signed:1;
+
+print fmt: "%d,%d %s %u (%s) %llu + %u [%s]", ((unsigned int) ((REC->dev) >> 20)), ((unsigned int) ((REC->dev) & ((1U << 20) - 1))), REC->rwbs, REC->bytes, __get_str(cmd), (unsigned long long)REC->sector, REC->nr_sector, REC->comm
+root@venus:/sys/kernel/debug/tracing/events/block/block_rq_insert#
+```
 
 ```
 # cd block/block_rq_insert
@@ -651,6 +776,28 @@ print fmt: "%d,%d %s %u (%s) %llu + %u [%s]", ((unsigned int) ((REC->dev) >> 20)
 
 
 ## USDT : User Statically-Defined Tracing
+
+```
+# apt install systemtap-sdt-dev
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following NEW packages will be installed:
+  systemtap-sdt-dev
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 16.3 kB of archives.
+After this operation, 75.8 kB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu focal/universe amd64 systemtap-sdt-dev amd64 4.2-3 [16.3 kB]
+Fetched 16.3 kB in 1s (20.9 kB/s)
+Selecting previously unselected package systemtap-sdt-dev.
+(Reading database ... 158121 files and directories currently installed.)
+Preparing to unpack .../systemtap-sdt-dev_4.2-3_amd64.deb ...
+Unpacking systemtap-sdt-dev (4.2-3) ...
+Setting up systemtap-sdt-dev (4.2-3) ...
+Processing triggers for man-db (2.9.1-1) ...
+root@venus:/sys/kernel/debug/tracing/events/block/block_rq_insert#
+```
+
 USDTは，ユーザ空間で動作するアプリの中(ソース)にDTrace由来のトレース用のコードを埋め込み，それを
 eBPFで監視するための物であるにもかかわらず，
 [公式リファレンスガイド][ref-guide]は監視される側のコードは一切示さずに，bpftrace側の例だけを
@@ -783,7 +930,8 @@ Attaching 1 probe...
 #### countの省略
 [公式リファレンスガイド][ref-guide]では，<code>count</code>を省略すると，デフォルト値が
 利用されるとあるが，
-手元の環境では，<code>count</code>を省略する記法はエラーとなる．
+0.9.4の環境では動くが，新しい
+環境では，<code>count</code>を省略する記法はエラーとなる．
 ```
 # bpftrace -e 'software:faults: { @[comm] = count(); }'
 stdin:1:1-17: ERROR: Failed to parse '': stoi
@@ -814,7 +962,7 @@ Attaching 1 probe...
 
 ただし，手元の環境virtual box + x64 ubuntuの環境では，HWイベントが
 そもそも有効でないため(コンパイルしようにも，menuconfigに現れない)，
-試すことができない．
+試すことができない．物理サーバでも同じ．
 
 以下は手元の環境での実行結果．
 ```

@@ -45,6 +45,21 @@ URLにデータを取りに行っている(再度TCPのコネクションを確�
 カーネルソースのインクルードファイルをgrepすると，対象関数の定義が参照できる．今回のサンプルでは「<code>tcp_v4_connect()</code>」を
 取り扱うので，「<code>tcp_v4_connect</code>」でインクルードファイルをgrepすると，以下の出力が得られる．
 ```
+root@venus:~# grep tcp_v4_connect /usr/src/linux-headers-5.4.0-42-generic/include/net/*
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/9p: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/bluetooth: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/caif: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/iucv: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/netfilter: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/netns: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/nfc: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/phonet: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/sctp: Is a directory
+grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/tc_act: Is a directory
+/usr/src/linux-headers-5.4.0-42-generic/include/net/tcp.h:int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
+root@venus:~#
+```
+```
 /usr/src/linux-headers-5.4.0-29-generic/include/net/tcp.h:int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
 ```
 第一引数がソケットの構造体，第二引数がアドレス構造体，第三引数がアドレス構造体の大きさとなっている．

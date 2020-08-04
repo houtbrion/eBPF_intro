@@ -404,12 +404,14 @@ $ ./array_access
 $
 ```
 
+
+
 監視する側のスクリプトの出力として以下のようなものが期待される．
 ```
  y[] = 1, 2, 3, 4
 ```
 
-しかし，手元の環境では以下のような出力となり，配列のインデックスに関係なく0番目の要素ばかりが出力される．
+タイプ1の環境では，期待どおり動作するが，環境によっては以下のような出力となり，配列のインデックスに関係なく0番目の要素ばかりが出力される．
 ```
 # bpftrace array_access.bt
 Attaching 1 probe...
@@ -423,7 +425,7 @@ y[]= 1, 1, 1, 1
 ```
 
 原因は今の所不明．
-ちなみに，手元の環境は以下のとおり．
+ちなみに，駄目な環境は以下のとおり．
 ```
 bash$ uname -a
 Linux ebpf 5.6.18 #1 SMP Wed Jul 1 00:05:32 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
@@ -458,6 +460,9 @@ Attaching 1 probe...
 ```
 
 ## ループ : <code>while</code>, <code>break</code>, <code>continue</code>
+
+0.9.4では動かない．
+
 ループ命令のうちサポートされるているのは<code>while</code>文のみ．[公式リファレンスガイド][ref-guide]の例では，
 <code>while</code>しか出てこないので，以下のサンプルスクリプト([loop_example.bt][loop_example.bt])で
 説明する．
@@ -497,6 +502,9 @@ Attaching 1 probe...
 ```
 
 ## return文
+0.9.4では動かない．
+
+
 [公式リファレンスガイド][ref-guide]は説明だけで例がないので，以下に
 サンプルスクリプト([return_example.bt][return_example.bt])を示す．
 ```
@@ -545,6 +553,9 @@ terminating to watch vfs_read().
 ```
 
 ## タプル : <code>( , )</code>
+0.9.4では動かない．
+
+
 bpftraceではNタプル(Nは1以上)をサポートしている．
 タプルのn番目を指定する場合は，<code>.</code>を用いる．
 以下は[公式リファレンスガイド][ref-guide]の例である．

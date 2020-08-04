@@ -652,6 +652,43 @@ configで選択肢にでてこない．
 そのためx86の環境では，「CONFIG_HW_PERF_EVENTS」のところがエラーとなり，テストが
 1つスキップされるのが正常と思える．
 
+
+物理サーバでやると20.04の公式版でも動く
+```
+noro@venus:~/devel/eBPF_intro/bcc/maps$ sudo ./map_perf_array_simple
+/usr/lib/python3/dist-packages/bcc/__init__.py:296: DeprecationWarning: not a bytes object: '\nBPF_PERF_ARRAY(cnt1, NUM_CPUS);\nBPF_ARRAY(prev, u64, NUM_CPUS);\nBPF_HISTOGRAM(dist);\nint do_sys_getuid(void *ctx) {\n    u32 cpu = bpf_get_smp_processor_id();\n    u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);\n\n    if (((s64)val < 0) && ((s64)val > -256))\n        return 0;\n\n    prev.update(&cpu, &val);\n    return 0;\n}\nint do_ret_sys_getuid(void *ctx) {\n    u32 cpu = bpf_get_smp_processor_id();\n    u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);\n\n    if (((s64)val < 0) && ((s64)val > -256))\n        return 0;\n\n    u64 *prevp = prev.lookup(&cpu);\n    if (prevp)\n        dist.increment(bpf_log2l(val - *prevp));\n    return 0;\n}\n'
+  text = _assert_is_bytes(text)
+/usr/lib/python3/dist-packages/bcc/__init__.py:624: DeprecationWarning: not a bytes object: 'getuid'
+  name = _assert_is_bytes(name)
+/usr/lib/python3/dist-packages/bcc/__init__.py:639: DeprecationWarning: not a bytes object: 'do_sys_getuid'
+  fn_name = _assert_is_bytes(fn_name)
+/usr/lib/python3/dist-packages/bcc/__init__.py:665: DeprecationWarning: not a bytes object: 'do_ret_sys_getuid'
+  fn_name = _assert_is_bytes(fn_name)
+/usr/lib/python3/dist-packages/bcc/__init__.py:487: DeprecationWarning: not a bytes object: 'cnt1'
+  name = _assert_is_bytes(name)
+/usr/lib/python3/dist-packages/bcc/__init__.py:487: DeprecationWarning: not a bytes object: 'dist'
+  name = _assert_is_bytes(name)
+     value               : count     distribution
+         0 -> 1          : 0        |                                        |
+         2 -> 3          : 0        |                                        |
+         4 -> 7          : 0        |                                        |
+         8 -> 15         : 0        |                                        |
+        16 -> 31         : 0        |                                        |
+        32 -> 63         : 0        |                                        |
+        64 -> 127        : 0        |                                        |
+       128 -> 255        : 0        |                                        |
+       256 -> 511        : 0        |                                        |
+       512 -> 1023       : 99       |****************************************|
+      1024 -> 2047       : 0        |                                        |
+      2048 -> 4095       : 1        |                                        |
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.407s
+
+OK
+noro@venus:~/devel/eBPF_intro/bcc/maps$
+```
+
 ### 問題
 この機能の実用的な使い方が思い浮かばず，シンプルで実用的な例を実装するような
 サンプルプログラムを作ることができないところ．
@@ -1052,7 +1089,7 @@ if (val) { // 取得した要素を更新
 
 手元の環境で確認すると，以下のファイルに記載がある．
 ```
-/usr/src/linux-headers-5.6.18/include/uapi/linux/bpf.h
+/usr/src/linux-headers-5.4.0-42-generic/include/uapi/linux/bpf.h
 ```
 その内容は以下の通り．
 ```

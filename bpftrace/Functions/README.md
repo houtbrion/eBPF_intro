@@ -315,11 +315,12 @@ Attaching 1 probe...
 もし，<code>--unsafe</code>オプション無しに実行すると次のようなエラーとなる．
 
 ```
-# bpftrace -e 'kprobe:do_nanosleep { system("ps -p %d\n", pid); }'
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'kprobe:d
+o_nanosleep { system("ps -p %d\n", pid); }'
 stdin:1:23-48: ERROR: system() is an unsafe function being used in safe mode
 kprobe:do_nanosleep { system("ps -p %d\n", pid); }
                       ~~~~~~~~~~~~~~~~~~~~~~~~~
-#
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions#
 ```
 
 ## <code>exit()</code>
@@ -817,6 +818,8 @@ bash: /usr/bin/ls: Permission denied
 ```
 
 ## <code>buf()</code>
+0.9.4は使えない
+
 文法:
 ```
 buf(void *d [, int length])
@@ -836,6 +839,7 @@ Datagram bytes: \x08\x00\x91\xb4\x00\x00\x00\x01\xfe\x84\x1a_\x00\x00\x00\x00\x8
 
 
 ## <code>sizeof()</code>
+0.9.4では使えない
 文法:
 ```
 sizeof(TYPE)
@@ -912,12 +916,19 @@ Attaching 1 probe...
 ```
 
 ## <code>print()</code>
+0.9.4では動かない． map変数のみに対応．
 文法:
 ```
 print(value)
 ```
 <code>print()</code>はmap以外のいろいろなデータを出力可能な関数である．
 以下は，[公式リファレンスガイド][ref-guide]の例にいくつか追加したもの．
+
+```
+
+```
+
+
 ```
 # bpftrace -e 'BEGIN { $t = (1, "string"); print(123); print($t); print(sizeof($t)); print(comm); print(probe); }'
 Attaching 1 probe...
@@ -937,6 +948,7 @@ BEGIN
 
 
 ## <code>strftime()</code>
+0.9.4では動かない．
 文法:
 ```
 strftime(const char *format, int nsecs)

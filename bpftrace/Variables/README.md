@@ -100,6 +100,13 @@ cgroup = 931
 
 
 ### <code>cpid</code>の使用例
+5.4.0+0.9.4は不可
+```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables# bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
+Attaching 1 probe...
+Error finding or enabling probe: usdt:./usdt_sample:foo:bar
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables#
+```
 ```
 # bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
 Attaching 1 probe...
@@ -132,22 +139,22 @@ cpid = 10590
 BEGIN{
   printf("$1 = %u, $2 = %u, $# = %u\n",$1,$2,$#);
 }
-# ./posv.bt
+# bpftrace posv.bt
 Attaching 1 probe...
 $1 = 0, $2 = 0, $# = 0
 ^C
 
-# ./posv.bt 1
+# bpftrace posv.bt 1
 Attaching 1 probe...
 $1 = 1, $2 = 0, $# = 1
 ^C
 
-#  ./posv.bt 1 2
+#  bpftrace posv.bt 1 2
 Attaching 1 probe...
 $1 = 1, $2 = 2, $# = 2
 ^C
 
-# ./posv.bt 1 2 3
+# bpftrace posv.bt 1 2 3
 Attaching 1 probe...
 $1 = 1, $2 = 2, $# = 3
 ^C
@@ -225,14 +232,14 @@ $name
 ```
 ローカル変数は，プローブの定義から始まる節をまたいで参照することができない変数で，節をまたいで参照すると「未定義エラー」となる．
 ```
-# bpftrace -e 'BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }'
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables# bpftrace -e 'BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }'
 stdin:1:47-54: ERROR: Undefined or undeclared variable: $start
 BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }
                                               ~~~~~~~
 stdin:1:100-106: ERROR: Undefined or undeclared variable: $start
 BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }
                                                                                                    ~~~~~~
-#
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables#
 ```
 [公式リファレンスガイド][ref-guide]の例は，節の中でローカル変数「<code>$delta</code>」を利用して，時刻の差分を参照している．
 ```
@@ -273,8 +280,8 @@ stdin:2:61-62: ERROR: syntax error, unexpected =, expecting }
 下の例では不明である．
 ```
 # bpftrace -e 'kprobe:do_nanosleep { @start[tid] = nsecs; }
->     kretprobe:do_nanosleep /@start[tid] != 0/ {
->         printf("slept for %d ms\n", (nsecs - @start[tid]) / 1000000); delete(@start[tid]); }'
+     kretprobe:do_nanosleep /@start[tid] != 0/ {
+         printf("slept for %d ms\n", (nsecs - @start[tid]) / 1000000); delete(@start[tid]); }'
 Attaching 2 probes...
 slept for 1000 ms
 slept for 1000 ms

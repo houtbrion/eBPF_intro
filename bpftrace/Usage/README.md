@@ -133,6 +133,9 @@ $
 ```
 
 ## stdinからのbpftraceスクリプト入力 : <code>-</code>
+version0.10.0からの機能
+
+
 コマンドラインの末尾が<code>-</code>で終わる場合，bpftraceのスクリプトをstdinから読み込む．
 ```
 $ echo 'BEGIN { printf("Hello, World!\n"); }' |sudo bpftrace -
@@ -260,7 +263,7 @@ tracepoint:syscalls:sys_enter_open
 bash$
 ```
 
-### 引数の型の調査 (要調査)
+### 引数の型の調査
 公式サイトの[リファレンスガイド][ref-guide]によると，BTFが利用可能な環境ではkprobe等の引数の型を調べることができると
 書いてあるものの，手元の環境(以下に示す)では，型の検索ができない．
 ```
@@ -270,6 +273,72 @@ bash$ grep -i btf /boot/config-5.6*
 CONFIG_DEBUG_INFO_BTF=y
 bash$
 ```
+
+
+#### BTFが動作する要件
+[公式リファレンスガイド][ref-guide]では，以下の要件を満たしている場合に
+BTFの機能を利用できることになっている．
+- カーネルバージョン4.18以上で，コンパイル時に<code>CONFIG_DEBUG_INFO_BTF</code>が有効
+- カーネルコンパイル時にpahole1.13より新しいバージョンを利用している
+- bpftraceが0.93より新しく，ビルド時にlibbpfのバージョンが0.0.4より新しいものを利用している．
+
+なお，多くのディストリビューション(Ubuntu, Debian, CentOS)で
+提供されているカーネルは<code>CONFIG_DEBUG_INFO_BTF</code>は
+OFFでコンパイルされている．
+
+#### 手元での動作状況
+手元の環境でカーネルをコンフィグの変更とコンパイルやカーネルソースを
+より新しいものに変更して繰り返しても動作させることができていない．
+
+```
+# bpftrace -kk -b -e 'kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }'
+stdin:1:45-66: ERROR: Unknown struct/union: 'struct path'
+kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }
+                                            ~~~~~~~~~~~~~~~~~~~~~
+#
+```
+本来動作する環境であれば，以下のコマンドで型定義が取得できるはずだが，出力がないということは
+情報をカーネルから取得できていない．
+```
+# bpftrace -lv 'struct path'
+#
+```
+
+ただし，カーネルが問題ではなく，paholeコマンドを使うと型の情報は取得できている．
+```
+# pahole|head -15
+struct list_head {
+        struct list_head *         next;                 /*     0     8 */
+        struct list_head *         prev;                 /*     8     8 */
+
+        /* size: 16, cachelines: 1, members: 2 */
+        /* last cacheline: 16 bytes */
+};
+struct hlist_head {
+        struct hlist_node *        first;                /*     0     8 */
+
+        /* size: 8, cachelines: 1, members: 1 */
+        /* last cacheline: 8 bytes */
+};
+struct hlist_node {
+        struct hlist_node *        next;                 /*     0     8 */
+#
+```
+ちなみに，以下はpaholeの出力から該当部分を抜き出したもの．
+```
+struct path {
+        struct vfsmount *          mnt;                  /*     0     8 */
+        struct dentry *            dentry;               /*     8     8 */
+
+        /* size: 16, cachelines: 1, members: 2 */
+        /* last cacheline: 16 bytes */
+};
+```
+このことから，bpftraceのBTFの実装がうまく動いていないように思われる．
+BTF機能がビルドでうまく含んでくれないのがissueとして挙げられている．
+- https://github.com/iovisor/bpftrace/issues/1422
+
+
 
 ## デバッグ出力 : <code>-d</code>, <code>-dd</code>と<code>-v</code>
 この分類に入るオプションは，かなり高度なプログラミングを行わないかぎり
@@ -416,7 +485,7 @@ bash$
 そのインクルードファイルを直接指定してロードする方法．
 
 [公式リファレンスガイド][ref-guide]の例は，スクリプト部分にtypo(以下の例の<code>struct</code>が欠けている)があり，そのまま実行できないため
-要注意(2020/7/02時点)．
+要注意(2020/08/03時点)．
 ```
 bash$ sudo bpftrace --include linux/path.h --include linux/dcache.h -e 'kprobe:vfs_open { printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name)); }'
 Attaching 1 probe...
@@ -451,6 +520,18 @@ bash$
 ## 環境変数
 
 ### bpftraceの環境変数
+bpftraceのバージョン0.9.4の環境変数とそのデフォルト値は以下の通り．
+```
+BPFTRACE_STRLEN           [default: 64] bytes on BPF stack per str()
+BPFTRACE_NO_CPP_DEMANGLE  [default: 0] disable C++ symbol demangling
+BPFTRACE_MAP_KEYS_MAX     [default: 4096] max keys in a map
+BPFTRACE_CAT_BYTES_MAX    [default: 10k] maximum bytes read by cat builtin
+BPFTRACE_MAX_PROBES       [default: 512] max number of probes
+BPFTRACE_LOG_SIZE         [default: 409600] log size in bytes
+BPFTRACE_NO_USER_SYMBOLS  [default: 0] disable user symbol resolution
+BPFTRACE_VMLINUX          [default: None] vmlinux path used for kernel symbol resolution
+BPFTRACE_BTF              [default: None] BTF file
+```
 
 現在のバージョン(v0.10.0-184-g71754)のデフォルト値は以下の通り．
 ```
@@ -470,7 +551,7 @@ BPFTRACE_BTF                [default: none] BTF file
 
 詳細な環境変数の意味は[公式リファレンスガイド][ref-guide]を参照していただきたいが，
 各環境変数の意味を簡単に紹介する．ただし，
-以下の3種類は[公式リファレンスガイド][ref-guide]の現在(2020/07/02)バージョンでは，
+以下の3種類は[公式リファレンスガイド][ref-guide]の現在(2020/08/03)のバージョンでは，
 説明が記載されていないので要注意．
 ```
 BPFTRACE_CAT_BYTES_MAX

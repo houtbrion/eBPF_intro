@@ -73,9 +73,7 @@ CentOS8.1はカーネルを入れ替えないかぎり使えないことがわ�
 同様に，Ubuntu20.04で確認してみる．
 ```
 # grep KPROBE_OVERRIDE config*
-config-5.4.0-31-generic:CONFIG_BPF_KPROBE_OVERRIDE=y
-config-5.4.0-33-generic:CONFIG_BPF_KPROBE_OVERRIDE=y
-config-5.4.0-37-generic:CONFIG_BPF_KPROBE_OVERRIDE=y
+/boot/config-5.4.0-42-generic:CONFIG_BPF_KPROBE_OVERRIDE=y
 #
 ```
 インストール済みの3つのカーネル(Ubuntu標準品)共に，利用可能な状態であることがわかる．
