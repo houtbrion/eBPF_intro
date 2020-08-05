@@ -1,4 +1,9 @@
 # User Statically-Defined Tracing
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 User Statically-Defined Tracingは元々DTraceで導入された技術で，
 ユーザアプリのソースコードに外部からアプリを監視するための機能を

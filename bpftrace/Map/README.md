@@ -34,6 +34,12 @@ Attaching 1 probe...
 
 
 ## <code>count()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @counter_name[optional_keys] = count()
@@ -69,6 +75,12 @@ Attaching 1 probe...
 
 
 ## <code>sum()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @counter_name[optional_keys] = sum(value)
@@ -97,6 +109,12 @@ Attaching 1 probe...
 ```
 
 ## <code>avg()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @counter_name[optional_keys] = avg(value)
@@ -137,6 +155,13 @@ Attaching 1 probe...
 ```
 
 ## <code>min()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 @counter_name[optional_keys] = min(value)
@@ -176,6 +201,12 @@ Attaching 1 probe...
 ```
 
 ## <code>max()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @counter_name[optional_keys] = max(value)
@@ -230,6 +261,13 @@ Attaching 1 probe...
 ```
 
 ## <code>stats()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 @counter_name[optional_keys] = stats(value)
@@ -266,6 +304,12 @@ Attaching 1 probe...
 ```
 
 ## <code>lhist()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @histogram_name[optional_key] = lhist(value, min, max, step)
@@ -295,6 +339,12 @@ Attaching 1 probe...
 
 
 ## <code>hist()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 @histogram_name[optional_key] = hist(value)
@@ -435,6 +485,12 @@ Attaching 1 probe...
 
 
 ## <code>print()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 print(@map [, top [, divisor]])
@@ -467,11 +523,15 @@ END節の部分で，実行終了時に<code>@ms</code>を<code>print()</code>�
 出力している．
 
 ## <code>clear()</code>と<code>zero()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 MAPは内容をクリアできるので，END節の中でclearすると中身が空になる．
 ```
-# bpftrace -e 'kprobe:vfs_read { @foo[comm] = count(); }
- END{clear(@foo);}'
+# bpftrace -e 'kprobe:vfs_read { @foo[comm] = count(); } END{clear(@foo);}'
 Attaching 2 probes...
 ^C
 
@@ -480,8 +540,7 @@ Attaching 2 probes...
 ```
 同じく，<code>clear()</code>ではなく，<code>zero()</code>で値を0にできる．
 ```
-# bpftrace -e 'kprobe:vfs_read { @foo[comm] = count(); }
- END{zero(@foo);}'
+# bpftrace -e 'kprobe:vfs_read { @foo[comm] = count(); } END{zero(@foo);}'
 Attaching 2 probes...
 ^C
 

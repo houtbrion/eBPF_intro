@@ -28,6 +28,11 @@
 
 
 ### <code>func</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 ```
 # bpftrace -e 'kprobe:do_sys_open { printf("func = %s\n", func); }'
@@ -44,6 +49,12 @@ func = do_sys_open
 ```
 
 ### <code>probe</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 ```
 # bpftrace -e 'kprobe:do_sys_open { printf("probe = %s\n", probe); }'
 Attaching 1 probe...
@@ -58,6 +69,12 @@ probe = kprobe:do_sys_open
 ```
 
 ### <code>rand</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 ```
 # bpftrace -e 'kprobe:do_sys_open { printf("rand = %u\n", rand); }'
 Attaching 1 probe...
@@ -76,6 +93,11 @@ rand = 4019234747
 ```
 
 ### <code>cgroup</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 ```
 # bpftrace -e 'kprobe:do_sys_open { printf("cgroup = %u\n", cgroup); }'
@@ -100,7 +122,13 @@ cgroup = 931
 
 
 ### <code>cpid</code>の使用例
-5.4.0+0.9.4は不可
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 ```
 root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables# bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
 Attaching 1 probe...
@@ -131,6 +159,12 @@ cpid = 10590
 ```
 
 ### <code>$1, $2, ..., $N, $#</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 ```
 # cat posv.bt
 #!/usr/local/bin/bpftrace
@@ -163,6 +197,12 @@ $1 = 1, $2 = 2, $# = 3
 ```
 
 ### <code>nsecs, elapsed</code>の使用例
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 <code>nsecs</code>は
 ナノ秒単位のカーネル内部時刻(64bit非負整数)を表す．この時刻はuptimeに似たもので，詳細は<code>man clock_gettime</code>でCLOCK_MONOTONICの部分を参照．また，<code>elapsed</code>はbpftraceの初期化後からの経過時間(ナノ秒)を表す．
 
@@ -176,10 +216,17 @@ nsecs = 3610106795, elapsed = 1327847
 ```
 
 ### <code>kstack</code>と<code>ustack</code>
+
+
 <code>kstack</code>と<code>ustack</code>はそれぞれ<code>kstack()</code>と<code>ustack()</code>の
 aliasであるので，関数の<code>kstack()</code>と<code>ustack()</code>を参照．
 
 ## ユーザ定義変数 : <code>@</code>, <code>$</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 文法:
 ```

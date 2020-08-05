@@ -24,13 +24,33 @@
 |<code>override(u64 rc)</code>| Override return value |
 
 ## <code>printf()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 C言語等の<code>printf()</code>と基本的には同じ動きをするが，使えるフォーマットに制約がある．
 詳細はどこにも記載がないので不明．
 
 ## <code>time()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 <code>strftime(3)</code>と同じで，現在時刻をフォーマットして出力する．
 
 ## <code>join()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 join(char *arr[] [, char *delim])
@@ -110,6 +130,13 @@ troff,-mtty-char,-mandoc,-Tutf8
 ```
 
 ## <code>str()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 str(char *s [, int length])
@@ -154,6 +181,13 @@ anon@ebpf:/usr/src/linux-source-5.4.0/linux-source-5.4.0/include/linux/platform_
 ```
 
 ## <code>ksym()</code>と<code>reg()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 ksym(addr)
@@ -215,6 +249,13 @@ ldsem_down_read
 ```
 
 ## <code>kaddr()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 kaddr(char *name)
@@ -239,6 +280,12 @@ usbcore
 ```
 
 ## <code>usym()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 usym(addr)
@@ -266,6 +313,13 @@ rl_restore_state
 ```
 
 ## <code>uaddr()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|×|
+|Ubuntu最新|×|
+
+
 文法:
 ```
 u64 *uaddr(symbol) (default)
@@ -281,11 +335,16 @@ u8 *uaddr(symbol)
 - USDT
 
 なお，注意事項としてアドレス空間のランダム化(ASLR:Address Space Layout Randomization)
-が有効な場合は動かない．そのため，手元の環境Ubuntu20.04LTSでは動かない．
-systemctlで一時的にASLRを無効化しても動かなかった．
+が有効な場合は動かない．Ubuntu20.04でsystemctlで一時的にASLRを無効化しても動かなかった．
 
 
 ## <code>system()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 system(command)
@@ -315,8 +374,7 @@ Attaching 1 probe...
 もし，<code>--unsafe</code>オプション無しに実行すると次のようなエラーとなる．
 
 ```
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'kprobe:d
-o_nanosleep { system("ps -p %d\n", pid); }'
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'kprobe:do_nanosleep { system("ps -p %d\n", pid); }'
 stdin:1:23-48: ERROR: system() is an unsafe function being used in safe mode
 kprobe:do_nanosleep { system("ps -p %d\n", pid); }
                       ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -324,6 +382,12 @@ root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions#
 ```
 
 ## <code>exit()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 <code>exit()</code>はbpftraceの実行を終了する(コンソールでCtrl-Cを入力したのと同じ)コマンドである．
 そのため，<code>exit()</code>が実行されるとEND節の実行等が行われる．
 
@@ -339,6 +403,12 @@ END
 ```
 
 ## <code>cgroupid()</code>
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|○||
+|CentOS公式|×|デフォルトでは例のsliceが存在しないので，cgroupを作るところから始めないといけない|
+|Ubuntu最新|○||
+
 文法:
 ```
 cgroupid(char *path)
@@ -408,6 +478,12 @@ libc.so.6
 ```
 
 ## <code>ntop()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 ntop([int af, ]int|char[4|16] addr)
@@ -492,6 +568,13 @@ Attaching 1 probe...
 
 
 ## <code>kstack()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 kstack([StackMode mode, ][int limit])
@@ -566,6 +649,12 @@ Attaching 1 probe...
 ```
 
 ## <code>ustack()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 ustack([StackMode mode, ][int limit])
@@ -678,6 +767,12 @@ Attaching 1 probe...
 ```
 
 ## <code>cat()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 cat(filename)
@@ -703,6 +798,12 @@ systemd-resolve => /lib/systemd/systemd-resolved
 ```
 
 ## <code>signal()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 signal(u32 signal)
@@ -747,6 +848,12 @@ Attaching 1 probe...
 ```
 
 ## <code>strncmp()</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 strncmp(char *s1, char *s2, int length)
@@ -787,6 +894,12 @@ Attaching 334 probes...
 
 
 ## <code>override()</code>
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|○||
+|CentOS公式|×|カーネルコンフィグの問題|
+|Ubuntu最新|○||
+
 文法:
 ```
 override(u64 rc)
@@ -817,8 +930,23 @@ bash: /usr/bin/ls: Permission denied
 #
 ```
 
+```
+[root@centos Variables]#  bpftrace  -e '#include <linux/sched.h>
+> kprobe:__x64_sys_execve /comm == "bash"/ { override(-EACCES); }' --unsafe
+stdin:2:44-63: ERROR: BPF_FUNC_override_return not available for your kernel version
+kprobe:__x64_sys_execve /comm == "bash"/ { override(-EACCES); }
+                                           ~~~~~~~~~~~~~~~~~~~
+[root@centos Variables]#
+```
+
 ## <code>buf()</code>
-0.9.4は使えない
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 
 文法:
 ```
@@ -839,7 +967,13 @@ Datagram bytes: \x08\x00\x91\xb4\x00\x00\x00\x01\xfe\x84\x1a_\x00\x00\x00\x00\x8
 
 
 ## <code>sizeof()</code>
-0.9.4では使えない
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 文法:
 ```
 sizeof(TYPE)
@@ -895,6 +1029,14 @@ Attaching 1 probe...
 
 #
 ```
+```
+root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace --btf -e 'BEGIN { printf("%d\n", sizeof(struct task_struct)); }'
+stdin:1:24-50: ERROR: Unknown identifier: 'struct task_struct'
+BEGIN { printf("%d\n", sizeof(struct task_struct)); }
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions#
+```
+
 あと，通常のCの構造体以外の利用例は以下の通り．
 ```
 # bpftrace -e 'BEGIN { printf("%d\n", sizeof(1 == 1)); }'
@@ -916,7 +1058,17 @@ Attaching 1 probe...
 ```
 
 ## <code>print()</code>
-0.9.4では動かない． map変数のみに対応．
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
+以下の例は，ノーマルな変数(mapではない)に対する例であるため，
+Ubuntu公式の環境(bpftraceが0.9.4)では動かない． map変数のみに対応している．
+map変数については，mapの章を参照していただきたい．
+
 文法:
 ```
 print(value)
@@ -924,9 +1076,6 @@ print(value)
 <code>print()</code>はmap以外のいろいろなデータを出力可能な関数である．
 以下は，[公式リファレンスガイド][ref-guide]の例にいくつか追加したもの．
 
-```
-
-```
 
 
 ```
@@ -948,7 +1097,12 @@ BEGIN
 
 
 ## <code>strftime()</code>
-0.9.4では動かない．
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|×|
+|Ubuntu最新|○|
+
 文法:
 ```
 strftime(const char *format, int nsecs)
@@ -959,7 +1113,7 @@ strftime(const char *format, int nsecs)
 ユーザ空間で実行されるということが記載されている．
 
 また，この機能が利用可能なカーネルやbpftraceのバージョンの記載が[公式リファレンスガイド][ref-guide]には
-なく，手元の環境では動かない．
+なく，手元の環境のうち，CentOSとUbuntuの公式版では動かない．
 ```
 # bpftrace -e 'i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }'
 stdin:1:24-32: ERROR: Unknown function: strftime
@@ -967,6 +1121,18 @@ i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }
                        ~~~~~~~~
 #
 ```
+
+Ubuntu最新環境では動く．
+```
+root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }'
+Attaching 1 probe...
+02:00:11
+02:00:12
+^C
+
+root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions#
+```
+
 
 <!-- 参考文献リスト -->
 [ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md>  "公式リファレンスガイド"

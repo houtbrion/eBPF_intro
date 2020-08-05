@@ -1,4 +1,12 @@
 # kfunc
+
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|×|
+|Ubuntu最新|○|
+Ubuntu公式，CentOS公式共にサポートしているか否かのチェックコードも動かない．
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#9-kfuncs
 
@@ -6,8 +14,6 @@ kprobe/kretprobeは監視対象の関数の実行開始直後と終了直前に�
 kfunc/kretfuncは監視対象関数の実行直前と終了直後に実行されるもの．
 
 ## kfunc利用可能性の確認
-0.9.4では，チェックコードも動かない．
-
 kfuncはカーネルのビルドオプションで<code>CONFIG_DEBUG_INFO_BTF</code>が選択(y)になっている
 ことが条件である．ただし，
 ネットでの投稿を見ると「普通のディストリビューションではこの項目はnです．」ということなので，
@@ -56,6 +62,17 @@ kfunc is not supported
 is_support_kfunc = BPF.support_kfunc()
 if not is_support_kfunc:
     print("kfunc is not supported")
+```
+
+ただし，Ubuntu, CentOS共に公式リポジトリのbcc(というよりpython側のライブラリ)は，
+kfuncのサポートがないため，チェックコードも動作しない．
+```
+root@venus:/home/noro/devel/eBPF_intro/bcc/kfunc# ./check_kfunc
+Traceback (most recent call last):
+  File "./check_kfunc", line 5, in <module>
+    is_support_kfunc = BPF.support_kfunc()
+AttributeError: type object 'BPF' has no attribute 'support_kfunc'
+root@venus:/home/noro/devel/eBPF_intro/bcc/kfunc#
 ```
 
 ## 基本的な利用方法

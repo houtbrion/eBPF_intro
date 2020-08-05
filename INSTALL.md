@@ -128,6 +128,7 @@ $ make menuconfig
 - CONFIG_DEBUG_INFO_BTF
 
 ### カーネルビルド
+
 以下のコマンドでカーネルのパッケージをビルド．
 ```
 make -j$(grep -c processor /proc/cpuinfo) bindeb-pkg
@@ -135,15 +136,12 @@ make -j$(grep -c processor /proc/cpuinfo) bindeb-pkg
 ビルド終了後，
 必要なパッケージがビルドできているか確認．
 ```
-$ ls ../
-linux-5.7.0-rc7+_5.7.0-rc7+-1_amd64.buildinfo
-linux-5.7.0-rc7+_5.7.0-rc7+-1_amd64.changes
-linux-headers-5.7.0-rc7+_5.7.0-rc7+-1_amd64.deb
-linux-image-5.7.0-rc7+_5.7.0-rc7+-1_amd64.deb
-linux-image-5.7.0-rc7+-dbg_5.7.0-rc7+-1_amd64.deb
-linux-libc-dev_5.7.0-rc7+-1_amd64.deb
-v5.6.19
-$
+noro@nebpf:~/devel/kernel$ ls
+linux-5.8                            linux-headers-5.8.0_5.8.0-1_amd64.deb
+linux-5.8.0_5.8.0-1_amd64.buildinfo  linux-image-5.8.0_5.8.0-1_amd64.deb
+linux-5.8.0_5.8.0-1_amd64.changes    linux-image-5.8.0-dbg_5.8.0-1_amd64.deb
+linux-5.8.tar.xz                     linux-libc-dev_5.8.0-1_amd64.deb
+noro@nebpf:~/devel/kernel$
 ```
 
 ソースをダウンロードしたときは，5.6.19を指定していたはずなのに，
@@ -154,12 +152,26 @@ $
 ```
 $ cd ..
 $ sudo dpkg -i *.deb
-Selecting previously unselected package linux-headers-5.7.0-rc7+.
-(Reading database ... 157718 files and directories curr
+
 ```
 
 
 ## bccのインストール
+
+
+```
+root@nebpf:/home/noro/devel/kernel# apt install arping netperf iperf iperf3 pip3
+Reading package lists... Done
+Building dependency tree
+(中略)
+Processing triggers for systemd (245.4-4ubuntu3.2) ...
+Processing triggers for man-db (2.9.1-1) ...
+Processing triggers for libc-bin (2.31-0ubuntu9) ...
+root@nebpf:/home/noro/devel/kernel#
+```
+
+
+
 [bcc][bcc]をインストールする場合，利用しているOS用の
 パッケージが既に存在しているか否か，パッケージが存在する場合の
 インストール方法，ソースをビルドする場合のビルドに必要なツール類の
@@ -175,17 +187,34 @@ Selecting previously unselected package linux-headers-5.7.0-rc7+.
 $ export version=0.15.0
 $ export url=https://github.com/iovisor/bcc.git
 $ git clone -b "v${version}" --single-branch --depth 1 ${url} bcc-${version}
-Cloning into 'dwarves'...
-remote: Enumerating objects: 150, done.
-remote: Counting objects: 100% (150/150), done.
-remote: Compressing objects: 100% (85/85), done.
-remote: Total 5601 (delta 73), reused 122 (delta 53), pack-reused 5451
-Receiving objects: 100% (5601/5601), 2.39 MiB | 2.47 MiB/s, done.
-Resolving deltas: 100% (3601/3601), done.
+Cloning into 'bcc-0.15.0'...
+remote: Enumerating objects: 958, done.
+remote: Counting objects: 100% (958/958), done.
+remote: Compressing objects: 100% (893/893), done.
+remote: Total 958 (delta 108), reused 350 (delta 22), pack-reused 0
+Receiving objects: 100% (958/958), 4.13 MiB | 3.21 MiB/s, done.
+Resolving deltas: 100% (108/108), done.
+Note: switching to 'e41f7a3be5c8114ef6a0990e50c2fbabea0e928e'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
 $ pushd bcc-${version}
 $ git submodule update --init
 $ popd
-$ mkdir bcc/build; cd bcc/build
+$ mkdir bcc-${version}/build; cd bcc-${version}/build
 $ cmake ..
 $ make
 $ sudo make install

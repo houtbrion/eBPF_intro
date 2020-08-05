@@ -4,6 +4,12 @@
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#debugging
 
 ## bpf_override_return()
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|○||
+|CentOS公式|×|カーネルコンフィグの問題|
+|Ubuntu最新|○||
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-bpf_override_return
 

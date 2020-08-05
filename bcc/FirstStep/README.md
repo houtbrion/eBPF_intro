@@ -1,5 +1,11 @@
 # はじめの一歩
 
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 下のプログラムは，本ディレクトリに収容しているサンプルプログラム(
 <a href="printk_sample">printk_sample</a>)である．
 

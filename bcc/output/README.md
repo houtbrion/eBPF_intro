@@ -1,5 +1,9 @@
 # eBPMのVMからユーザ空間のプログラムへのデータ出力
-
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 ## BPF_PERF_OUTPUTとperf_submit()
 「最初の一歩」で説明したように，<code>bpf_trace_printk()</code>には問題があるため，より複雑なデータをeBPFのVMとユーザ空間のプログラム間でやり取りするための方法が，

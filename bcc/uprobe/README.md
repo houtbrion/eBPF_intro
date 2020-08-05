@@ -1,4 +1,11 @@
 # ユーザアプリの監視(uprobe/uretprobe)
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#4-uprobes
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#4-attach_uprobe

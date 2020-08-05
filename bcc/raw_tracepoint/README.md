@@ -1,5 +1,13 @@
 # Rawトレースポイント
 
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|△|<code>attach_raw_tracepoint()</code>が動かない|
+|CentOS公式|△|<code>attach_raw_tracepoint()</code>が動かない|
+|Ubuntu最新|△|<code>attach_raw_tracepoint()</code>が動かない|
+
+
+
 ## 参考文献
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracepoints
 - https://lwn.net/Articles/748352/
@@ -58,11 +66,8 @@ raw_tracepointと同じことをkprobeで行う方法を読み取ることが
 <code>RAW_TRACEPOINT_PROBE</code>マクロを使わずに，<code>attach_raw_tracepoint()</code>を使おうと
 すると(本ディレクトリの
 <a href="sched_switch_attach_tracepoint">sched_switch_attach_tracepoint</a>)，
-手元のbccのバージョンのせいか，
-動かない．このプログラムは
-Ubuntu20.04のカーネルバージョンを5.6と入れ替えた場合，
-CentOS18.1でも動かない．
-
+手元のbccのバージョンのせいか
+動かない．
 
 ```
 # ./sched_switch_attach_trac

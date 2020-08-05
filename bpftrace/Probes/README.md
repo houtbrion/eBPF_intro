@@ -3,6 +3,11 @@
 
 
 ## 一定時間間隔でイベントを発生させるプローブ : </code>interval</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 文法:
 ```
@@ -38,7 +43,25 @@ Attaching 2 probes...
 <code>clear()</code>となっており，これが実行できないというエラーメッセージが出力される．
 このバージョンは，0.9.4でも動く．
 
+```
+[root@centos Probes]# bpftrace  -e 'tracepoint:raw_syscalls:sys_enter { @syscalls = count(); } interval:s:1 { print(@syscalls); clear(@syscalls); }'
+Attaching 2 probes...
+@syscalls: 46
+
+Error looking up elem: -1
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  Could not clear map with ident "@syscalls", err=-1
+中止 (コアダンプ)
+[root@centos Probes]#
+```
+
 ## 周期的に性能データを取得するためのイベント用probe : <code>profile</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 文法:
 ```
 profile:hz:rate
@@ -63,10 +86,21 @@ Attaching 1 probe...
 ```
 
 ## 組み込みイベント : <code>BEGIN</code>と<code>END</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 今まで何度も出てきているが，<code>BEGIN</code>はスクリプト実行開始時に1度だけ実行され，<code>END</code>は終了時に実行されるprobeである．
 
 ## カーネル内部の関数を監視するためのprobe : <code>kprobe</code>, <code>kretprobe</code>
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|▲|offset指定とBTFが動かない|
+|CentOS公式|△|BTFが動かない|
+|Ubuntu最新|△|BTFが動かない|
+
 文法:
 ```
 kprobe:function_name[+offset]
@@ -82,12 +116,31 @@ sleep by 1396
 sleep by 3669
 ^C
 ```
-ubuntuのノーマル環境は不可
+ubuntu公式環境はoffset指定ができない．
 ```
 oot@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# bpftrace -e 'kprobe:do_sys_open+9 { printf("in here\n"); }'
 Attaching 1 probe...
 Can't check if kprobe is in proper place (compiled without (k|u)probe offset support): /usr/lib/debug/boot/vmlinux-5.4.0-42-generic:do_sys_open+9
 root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+```
+
+```
+[root@centos Probes]# bpftrace -e 'kprobe:do_sys_open+9 { printf("in here\n"); }'
+Attaching 1 probe...
+in here
+in here
+in here
+in here
+in here
+in here
+in here
+in here
+in here
+in here
+in here
+^C
+
+[root@centos Probes]#
 ```
 
 
@@ -358,6 +411,19 @@ open path: smp_affinity
 BTFが動作しなくなっている．
 
 ## ユーザアプリ内部を監視するためのprobe : <code>uprobe</code>, <code>uretprobe</code>
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|▲|offset指定とBTFが動かない|
+|CentOS公式|△|BTFが動かない|
+|Ubuntu最新|△|BTFが動かない|
+
+文法:
+```
+uprobe:library_name:function_name[+offset]
+uprobe:library_name:address
+uretprobe:library_name:function_name
+```
+
 uprobe/uretprobeはユーザアプリの監視を実現することができるが，[公式リファレンスガイド][ref-guide]は共有ライブラリの監視しか
 例示していないため，非常にシンプルなユーザが作成した[アプリ][target-sample.c](以下に引用)を監視する場合で説明する．
 このアプリは<code>main()</code>から非負整数の引数を与えて，<code>func()</code>を呼び出すと，<code>func()</code>は
@@ -479,19 +545,7 @@ Attaching 2 probes...
 #
 ```
 
-### インデックスの指定
-Ubuntuのノーマル環境では動かない．
-
-```
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# bpftrace -e 'uprobe:./target-sample:func+4
-> {
->         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid
-> , tid, arg0);
-> }'
-Attaching 1 probe...
-Can't check if uprobe is in proper place (compiled without (k|u)probe offset support): ./target-sample:func+4
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
-```
+### offsetの指定
 
 
 kprobeの場合と同じく，uprobeでも実行開始から実行が少し進んだ場所を監視することができる．
@@ -550,13 +604,28 @@ Could not add uprobe into middle of instruction: /home/noro/devel/bpftrace-doc/P
 uprobeの場合も，bpftraceが<code>ALLOW_UNSAFE_PROBE</code>を有効にしてコンパイルした場合は，
 アラインメントのチェックを無効にするオプション<code>--unsafe</code>が利用できる．
 
+Ubuntu公式版は動作しない．
+```
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# bpftrace -e 'uprobe:./target-sample:func+4
+> {
+>         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid
+> , tid, arg0);
+> }'
+Attaching 1 probe...
+Can't check if uprobe is in proper place (compiled without (k|u)probe offset support): ./target-sample:func+4
+root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes#
+```
+
+
+
+
 ### 監視対象の関数名の代わりに，アドレスを用いる．
 インデックス指定似た機能で，監視対象を関数名の代わりにアドレスだけで指定する方法もある．
 先程までと同じアプリでは，アドレス<code>0x1189</code>から関数<code>func()</code>が
 始まっている．これを利用して<code>0x1189</code>をアドレスとして指定して，
 <code>func()</code>を監視するアクションを実行することもできる．
 ```
-# bpftrace -e 'uprobe:/home/noro/devel/bpftrace-doc/Probes/target-sample:0x1189
+# bpftrace -e 'uprobe:./target-sample:0x1189
 {
         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid, tid, arg0);
 }'
@@ -576,6 +645,12 @@ Attaching 1 probe...
 読んで理解するのに困難はないはずである．
 
 ## <code>tracepoint</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 
 ```
 root@venus:/home/noro/devel/eBPF_intro/bpftrace/Probes# uname -r
@@ -776,6 +851,11 @@ print fmt: "%d,%d %s %u (%s) %llu + %u [%s]", ((unsigned int) ((REC->dev) >> 20)
 
 
 ## USDT : User Statically-Defined Tracing
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 ```
 # apt install systemtap-sdt-dev
@@ -886,12 +966,19 @@ counter=7, string=hello
 
 
 ## Pre-defined (Software|Hardware) イベント
+
+
 [公式リファレンスガイド][ref-guide]にもあるように，<code>perf</code>で使われてきた
 パフォーマンスデータ取得用のイベントで，<code>man perf_event_open</code>に
 各イベントの説明が記載されている．
 
 
 ### ソフトウェアイベント
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|○||
+|CentOS公式|△|countの省略が動かない|
+|Ubuntu最新|△|countの省略が動かない|
 
 文法:
 ```
@@ -945,6 +1032,14 @@ Attaching 1 probe...
 ```
 
 ### ハードウェアイベント
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|×|
+|Ubuntu最新|×|
+
+
+
 [公式リファレンスガイド][ref-guide]とperf_event_open(2)のmanを見比べると，以下の
 項目が利用可能であることがわかる．
 |bpftraceのキーワード|perf_event_open(2)でtype=PERF_TYPE_HARDWAREの場合のconfig値|
@@ -962,7 +1057,9 @@ Attaching 1 probe...
 
 ただし，手元の環境virtual box + x64 ubuntuの環境では，HWイベントが
 そもそも有効でないため(コンパイルしようにも，menuconfigに現れない)，
-試すことができない．物理サーバでも同じ．
+試すことができない．Ubuntu公式版を物理マシンで動作させた際には，
+bcc側のハードウェアイベントは取り扱うことができたが，
+bpftraceでは動作しない．
 
 以下は手元の環境での実行結果．
 ```

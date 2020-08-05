@@ -20,6 +20,13 @@ eBPFの環境でカーネル内のVM上で動作するプログラムから
 済むような用途では，CPU負荷やバッファ溢れの問題を回避することができる．
 
 ## BPF_TABLE および BPF_ARRAY
+
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|△|<code>PINNED_TABLE</code>が動かない|
+|CentOS公式|△|<code>PINNED_TABLE</code>が動かない|
+|Ubuntu最新|▲|<code>PINNED_TABLE</code>は未確認|
+
 ここで対象となる機能:
 - BPF_TABLE
 - BPF_ARRAY
@@ -194,6 +201,14 @@ bccのソースを検索すると以下のソースに定義が存在する．
 できなかった．
 
 ## BPF_HASH
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
+
 - BPF_HASH
 - map.lookup_or_try_init()
 - map.delete()
@@ -293,6 +308,12 @@ if (value) {
 エントリを値0で作ってから終了している．
 
 ## BPF_HISTOGRAM
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 - BPF_HISTOGRAM
 
 参考文献:
@@ -348,9 +369,12 @@ Pythonでヒストグラム用のテーブルを出力する関数には，log�
 <code>print_linear_hist()</code>がある．これら2つをまとめたサンプルプログラムが
 本ディレクトリの
 <a href="map_hist">map_hist</a>
-である．
+である．ただし，このプログラムで監視している<code>blk_account_io_completion()</code>は
+カーネル5.8では無くなってしまっているので，代わりに従来<code>blk_account_io_completion()</code>の
+呼び出し元である<code>blk_update_request()</code>を監視する<a href="map_hist2">map_hist2</a>も
+用意した．
 
-このプログラムは，以下の文献を参考に，ブロックIOの書き込みデータ量をヒストグラムの表に
+<a href="map_hist">map_hist</a>は，以下の文献を参考に，ブロックIOの書き込みデータ量をヒストグラムの表に
 log形式と線形形式で別々に蓄積し，
 同時に出力されるようにしたものである．
 
@@ -393,6 +417,7 @@ b["log_dist"].print_log2_hist("kbytes")
 ```
 
 このサンプルプログラムを実際に動作させると以下のような出力が得られる．
+(ただし，最新環境では，<code>map_hist</code>の代わりに<code>map_hist2</code>を使っていただきたい．)
 ```
 # ./map_hist
 Tracing block I/O... Hit Ctrl-C to end.
@@ -439,6 +464,13 @@ log2 histgram
 ```
 
 ## BPF_PERCPU_ARRAY
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 - BPF_PERCPU_ARRAY
 
 参考文献:
@@ -532,6 +564,12 @@ sum()
 
 
 ## BPF_STACK_TRACE
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 - BPF_STACK_TRACE
 - map.get_stackid()
 
@@ -563,7 +601,7 @@ stack表から情報を抜き出して表示して終了する．
 実行すると以下のような結果が得られた．
 
 ```
-# ./mallocstacks.py 1823
+# python3 ../OriginalSample/mallocstacks.py 8159
 Attaching to malloc in pid 1823, Ctrl+C to quit.
 ^C672 bytes allocated at:
         __libc_malloc+0x0
@@ -586,6 +624,13 @@ stackの情報が取れたとして，これをどう使えば嬉しいことが
 どうすれば実現できるか，リファレンスガイドの記述もほとんどない上に，サンプルプログラムを見てもよくわからない．
 
 ## BPF_PERF_ARRAY
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|○||
+|CentOS公式|▲|物理マシンがないためハード性能機能の動作は未確認|
+|Ubuntu最新|▲|物理マシンがないためハード性能機能の動作は未確認|
+
+
 - BPF_PERF_ARRAY
 - map.perf_read()
 
@@ -694,6 +739,12 @@ noro@venus:~/devel/eBPF_intro/bcc/maps$
 サンプルプログラムを作ることができないところ．
 
 ## BPF_PROG_ARRAY
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 - BPF_PROG_ARRAY
 - map.call()
 
@@ -870,6 +921,12 @@ PID    COMM         OUTPUT
 
 
 ## 7. BPF_LPM_TRIE
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 - BPF_LPM_TRIE
 
 参考文献:
@@ -982,6 +1039,13 @@ with self.assertRaises(KeyError):
 また， 元のセルフテストのプログラムは，IPv6の場合の使い方も示されており参考になる．
 
 ## BPF_ARRAY_OF_MAPS
+
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|×|
+|Ubuntu最新|○|
+
 - BPF_ARRAY_OF_MAPS
 
 参考文献:
@@ -1187,6 +1251,13 @@ eBPFのVM内で<code>execve()</code>を実行したプロセス名を文字列"b
 多くの人が助かると思うが今のところ提供されていない．
 
 ## BPF_HASH_OF_MAPS
+
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|×|
+|Ubuntu最新|○|
+
 - BPF_HASH_OF_MAPS
 
 参考文献:

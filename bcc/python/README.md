@@ -8,6 +8,13 @@
 ここでは説明する．
 
 ## Debug Output機能
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 参考文献
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#debug-output
 
@@ -136,7 +143,14 @@ except KeyboardInterrupt:
 
 ## Map対応機能
 
+
 ### items()
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-items
 
@@ -274,6 +288,12 @@ task_switch[    0-> 3297]=1
 
 
 ### values()
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#4-values
 
@@ -345,6 +365,13 @@ rootユーザ ,  一般ユーザ
 値の一覧表を作っているので，比較してみると良い．
 
 ### ksym() とnum_open_kprobes()
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-ksym
 
@@ -422,6 +449,13 @@ TIME(s)            FUNCTION
 
 
 ### ksymname()
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|▲|サンプルプログラムがこの機能以外の部分が理由で動かない|
+|CentOS公式|○||
+|Ubuntu最新|○||
+
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#2-ksymname
 
@@ -453,7 +487,7 @@ if BPF.ksymname(syscall_fnname) != -1:
 ```
 実際に動作させると，以下のような出力が得られる．
 ```
-# ./statsnoop.py
+# python3 ../OriginalSample/statsnoop.py
 PID    COMM               FD ERR PATH
 2995   ls                 -1   2 /sys/fs/selinux
 2995   ls                 -1   2 /selinux
@@ -467,7 +501,20 @@ PID    COMM               FD ERR PATH
 ^C#
 ```
 
+#### 環境による違い
+Ubuntu公式版は，サンプルプログラム中で使われているヘルパー関数
+<code>bpf_probe_read_user()</code>がカーネルver5.5以降でしか
+使えないという警告で止まるが，CenOS8.2は何事もなかったかのように
+動く．bpftraceのバージョンが異なることも理由かもしれないが，
+今のところ未確認．
+
 ### sym()
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 参考文献:
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-sym
 

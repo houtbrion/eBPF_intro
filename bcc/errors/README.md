@@ -1,4 +1,10 @@
 # 実行時に発生するエラーについて
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 
 ## 参考文献
 - https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#bpf-errors

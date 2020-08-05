@@ -2,6 +2,12 @@
 
 
 ## バージョン表示 : <code>-V</code>もしくは<code>--version</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 ```
 bash$ bpftrace --version
 bpftrace v0.9.4
@@ -9,6 +15,12 @@ bash$
 ```
 
 ## ヘルプ : 無引数, <code>-h</code>もしくは<code>--help</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 無引数で起動するなどすると，コマンドラインの引数などが表示される．
 ```
 bash$ bpftrace --version
@@ -112,6 +124,12 @@ bash$
 ```
 
 ## ワンライナー : <code>-e 'program' </code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 <code>-e</code>の後ろに指定するクオートされた文字列をbpftraceのスクリプトとして実行する．
 ```
 # bpftrace -e 'BEGIN { printf("Hello, World!\n"); }'
@@ -121,6 +139,12 @@ Hello, World!
 ```
 
 ## bpftrace用スクリプトのファイル名 : filename
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 ファイルに保存したbpftrace用のスクリプトを実行する場合，コマンドラインの末尾にスクリプトのファイル名を指定．
 ```
 $ echo 'BEGIN { printf("Hello, World!\n"); }' >foo
@@ -133,6 +157,12 @@ $
 ```
 
 ## stdinからのbpftraceスクリプト入力 : <code>-</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|×|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 version0.10.0からの機能
 
 
@@ -147,6 +177,12 @@ $
 ```
 
 ## bpftraceを使ったコマンドの作成
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 以下の例はbpftraceを用いて"Hello World!"を実現する[プログラム][HelloWorld]を作成する例である．
 shellスクリプトと同じ仕組みで実現可能．
 ```
@@ -184,6 +220,15 @@ bash$
 ```
 
 ## bpftraceで利用可能なプローブの取得 : <code>-l [search]</code>
+
+
+
+|環境|プローブ数|
+|:--|:--|
+|Ubuntu公式|49703|
+|CentOS公式|46281|
+|Ubuntu最新|49571|
+
 Ubuntu20.04のカーネルでは，4万9千個近くのプローブ可能な場所がある．
 bash$uname -a
 Linux ebpf 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
@@ -202,6 +247,11 @@ bash$
 ```
 
 ### 全プローブのリスト取得
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
 
 <code>-l</code>を無引数で起動すると全プローブが出力される．
 ```
@@ -233,6 +283,11 @@ tracepoint:btrfs:btrfs_inode_new
 ```
 
 ### パターンマッチによるプローブの検索
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新||
 
 特定の名前のプローブの正式名を調べる場合，以下のようにパターンを指定すれば良い．
 ```
@@ -244,8 +299,15 @@ kprobe:tcp_process_tlp_ack
 bash$
 ```
 
-### プローブの引数の調査
-<code>-l</code>に<code>-v</code>を組み合わせることで，プローブの引数を
+### tracepointの引数の調査
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+
+<code>-l</code>に<code>-v</code>を組み合わせることで，tracepointの引数を
 調べることができる．この際，パターンマッチも可能．
 ```
 bash$ sudo bpftrace -lv tracepoint:syscalls:sys_enter_open
@@ -263,7 +325,13 @@ tracepoint:syscalls:sys_enter_open
 bash$
 ```
 
-### 引数の型の調査
+### kprobe等の引数調査
+|環境|動作|備考|
+|:--|:--|:--|
+|Ubuntu公式|×|カーネルが「CONFIG_DEBUG_INFO_BTF」をOFF|
+|CentOS公式|×|カーネルの「CONFIG_DEBUG_INFO_BTF」はONだが，bpftraceが非対応|
+|Ubuntu最新|×|同上|
+
 公式サイトの[リファレンスガイド][ref-guide]によると，BTFが利用可能な環境ではkprobe等の引数の型を調べることができると
 書いてあるものの，手元の環境(以下に示す)では，型の検索ができない．
 ```
@@ -282,9 +350,6 @@ BTFの機能を利用できることになっている．
 - カーネルコンパイル時にpahole1.13より新しいバージョンを利用している
 - bpftraceが0.93より新しく，ビルド時にlibbpfのバージョンが0.0.4より新しいものを利用している．
 
-なお，多くのディストリビューション(Ubuntu, Debian, CentOS)で
-提供されているカーネルは<code>CONFIG_DEBUG_INFO_BTF</code>は
-OFFでコンパイルされている．
 
 #### 手元での動作状況
 手元の環境でカーネルをコンフィグの変更とコンパイルやカーネルソースを
@@ -348,6 +413,12 @@ BTF機能がビルドでうまく含んでくれないのがissueとして挙げ
 と「太字」で記されている．
 
 ### 冗長出力 : <code>-v</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 「<code>-v</code>」オプションは，実行前にスクリプトの詳細な情報を出力するが，
 この中にはeBPFのVMにロードされるプログラムのバイトコードまで参照することができる．
 このディレクトリにおさめている[HelloWorld][HelloWorld]を<code>-v</code>付きで
@@ -395,7 +466,14 @@ bash$
 上のような情報を見る必要があるのは，よほど大規模もしくは凝ったスクリプトを作った場合に限られる．
 
 ### デバッグ情報 : <code>-d</code>, <code>-dd</code>
-<code>-d</code>オプションをつけてbpftraceのスクリプトを実行すると，該当スクリプトは
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
+<code>-d</code>や<code>-dd</code>
+オプションをつけてbpftraceのスクリプトを実行すると，該当スクリプトは
 実行されず，スクリプトを解析した結果の情報が出力される．
 ただし，[公式リファレンスガイド][ref-guide]では，「ユーザスクリプトのデバッグではなく，
 bpftrace自身のデバッグに役立つ情報である」と述べられている．
@@ -455,6 +533,12 @@ bash$
 ## プリプロセッサオプション
 
 ### インクルードファイルのディレクトリ指定 : <code>-I</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 bpftraceのスクリプトでは，Cのデータ型の定義等をインクルードファイルとして別の
 ファイルに定義しておき，それをロードすることでスクリプトの開発を容易にすることができる．
 この際，インクルードファイルがスクリプトと別のディレクトリに存在する場合は，
@@ -481,6 +565,12 @@ bash$
 ```
 
 ### インクルードするヘッダの指定 : <code>--include</code>
+|環境|動作|
+|:--|:--|
+|Ubuntu公式|○|
+|CentOS公式|○|
+|Ubuntu最新|○|
+
 実行するbpftraceのスクリプトに<code>#include</code>がないが，スクリプト内で使われている構造体定義が外部で行われている場合に，
 そのインクルードファイルを直接指定してロードする方法．
 
@@ -533,7 +623,7 @@ BPFTRACE_VMLINUX          [default: None] vmlinux path used for kernel symbol re
 BPFTRACE_BTF              [default: None] BTF file
 ```
 
-現在のバージョン(v0.10.0-184-g71754)のデフォルト値は以下の通り．
+現在のバージョン(v0.11.0)のデフォルト値は以下の通り．
 ```
 BPFTRACE_STRLEN             [default: 64] bytes on BPF stack per str()
 BPFTRACE_NO_CPP_DEMANGLE    [default: 0] disable C++ symbol demangling
