@@ -5,6 +5,7 @@
 |Ubuntu公式|×|
 |CentOS公式|×|
 |Ubuntu最新|○|
+
 Ubuntu公式，CentOS公式共にサポートしているか否かのチェックコードも動かない．
 
 参考文献:
