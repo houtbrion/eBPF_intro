@@ -181,16 +181,7 @@ bash$
 |CentOS公式|○|
 |Ubuntu最新|○|
 
-[プログラム][HelloWorld]
-
 以下の例はbpftraceを用いた「Hello World!」
-
-
-[プログラム][HelloWorld]
-
-[HelloWorld][HelloWorld]
-
-
 である．shellスクリプトと同じ仕組みで実現可能．
 ```
 bash$ cat HelloWorld
@@ -227,9 +218,6 @@ bash$
 ```
 
 ## bpftraceで利用可能なプローブの取得 : <code>-l [search]</code>
-
-
-
 |環境|プローブ数|備考|
 |:--|:--|:--|
 |Ubuntu公式|50586|物理ハードの場合は51493|
@@ -237,6 +225,7 @@ bash$
 |Ubuntu最新|49571||
 
 Ubuntu20.04のカーネルでは，5万個近くのプローブ可能な場所がある．
+```
 bash$uname -r
 5.4.0-42-generic
 bash$ sudo bpftrace -l | wc -l
