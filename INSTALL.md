@@ -88,26 +88,20 @@ $ sudo apt-get build-dep linux
 ```
 
 ### カーネルソースのダウンロード
-```
-$ git clone git://git.launchpad.net/~ubuntu-kernel-test/
-ubuntu/+source/linux/+git/mainline-crack cod/mainline/v5.6.19
-Cloning into 'cod/mainline/v5.6.19'...
-remote: Counting objects: 9765697, done.
-remote: Compressing objects: 100% (494536/494536), done.
-remote: Total 9765697 (delta 1625772), reused 1649954 (delta 1406065)
-Receiving objects: 100% (9765697/9765697), 1.93 GiB | 7.99 MiB/s, done.
-Resolving deltas: 100% (8277484/8277484), done.
-Checking objects: 100% (33554432/33554432), done.
-Updating files: 100% (67975/67975), done.
-$ cd cod/mainline/v5.6.19/
-```
+[カーネル公式サイト][kernel]からソースのtarballをダウンロードする．
+本ドキュメントのUbuntu最新環境では，5.8を利用している．
 
 ### カーネルビルドに必要な設定
 
 #### 現状のconfigを元に，新しいカーネル用の設定を作成
+解凍したカーネルソースのトップディレクトリに現在利用中のカーネルのconfigをコピーする．
+```
+cp /boot/config-`uname -r`* .config
+```
+
 以下のコマンドを入力して，現状のconfigから新しいカーネルの
-configを作成するが，yes/noをたくさん聞かれるが，
-とりあえずは，全てリターンキー入力(
+configを作成するが，yes/noをたくさん聞かれるため，
+とりあえず，全てリターンキー入力(
 デフォルトを選択)しておく．
 ```
 $ make localmodconfig
@@ -136,12 +130,12 @@ make -j$(grep -c processor /proc/cpuinfo) bindeb-pkg
 ビルド終了後，
 必要なパッケージがビルドできているか確認．
 ```
-noro@nebpf:~/devel/kernel$ ls
+bash$ ls
 linux-5.8                            linux-headers-5.8.0_5.8.0-1_amd64.deb
 linux-5.8.0_5.8.0-1_amd64.buildinfo  linux-image-5.8.0_5.8.0-1_amd64.deb
 linux-5.8.0_5.8.0-1_amd64.changes    linux-image-5.8.0-dbg_5.8.0-1_amd64.deb
 linux-5.8.tar.xz                     linux-libc-dev_5.8.0-1_amd64.deb
-noro@nebpf:~/devel/kernel$
+bash$
 ```
 
 ソースをダウンロードしたときは，5.6.19を指定していたはずなのに，
@@ -158,19 +152,17 @@ $ sudo dpkg -i *.deb
 
 ## bccのインストール
 
-
+ビルドに必要なツールをまず，インストール．
 ```
-root@nebpf:/home/noro/devel/kernel# apt install arping netperf iperf iperf3 pip3
+# apt install arping netperf iperf iperf3 pip3
 Reading package lists... Done
 Building dependency tree
 (中略)
 Processing triggers for systemd (245.4-4ubuntu3.2) ...
 Processing triggers for man-db (2.9.1-1) ...
 Processing triggers for libc-bin (2.31-0ubuntu9) ...
-root@nebpf:/home/noro/devel/kernel#
+#
 ```
-
-
 
 [bcc][bcc]をインストールする場合，利用しているOS用の
 パッケージが既に存在しているか否か，パッケージが存在する場合の
@@ -249,4 +241,4 @@ bpftraceの[インストールマニュアル][bpftrace-install]には
 [bcc-install]: <https://github.com/iovisor/bcc/blob/master/INSTALL.md> "bccインストールマニュアル"
 [bcc-ref-guide]: <https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md> "bcc公式リファレンスガイド"
 [kernel-version]: <https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md> "bccの機能と利用可能なカーネルバージョンの対応関係"
-
+[kernel]: <https://www.kernel.org/> "カーネル公式サーバ"

@@ -29,7 +29,7 @@ USDTの元であるSun(現Oracle)が公開していた日本語ドキュメン�
 ### 監視される対象のプログラムを起動．
 参考文献の手順に従い，コンパイルした状態で監視される側のプログラムを起動する．
 ```
-$ examples/usdt_sample/build/usdt_sample_app1/usdt_sample_app1 "pf" 1 30 10 1 50
+bash$ examples/usdt_sample/build/usdt_sample_app1/usdt_sample_app1 "pf" 1 30 10 1 50
 Applying the following parameters:
 Input prefix: pf.
 Input range: [1, 30].
@@ -95,11 +95,11 @@ void main(){
 そのような手順は不要で，上のアプリをgccを通すだけでコンパイルと実行が
 可能となる．
 ```
-$ gcc -o target-sample target-sample.c
-$ ./target-sample
+bash$ gcc -o target-sample target-sample.c
+bash$ ./target-sample
 pid = 2698
 counter=1
-^C$
+^Cbash$
 ```
 
 アプリのソースの12行目を見ると，2引数のDTraceの関数を呼び出し，
@@ -123,7 +123,7 @@ Dtraceのトレースポイントを追いかけることを指定．次の行�
 以下のような出力となる．
 
 ```
-T$ ./target-sample
+bash$ ./target-sample
 pid = 1627
 counter=1
 counter=2
@@ -142,7 +142,7 @@ counter=14
 counter=15
 counter=16
 counter=17
-^C$
+^Cbash$
 ```
 
 アプリ動作中に監視する側のeBPFのプログラムを動作させる(プロセスID
@@ -164,10 +164,10 @@ counter=17
 アプリに埋め込むUSDTのプローブ関数の定義がわからないといけないので，
 手元の環境(Ubuntu20.04)でインクルードファイルを探してみた．
 ```
-$ cd /usr/include
-$ find . -name sdt.h -print
+bash$ cd /usr/include
+bash$ find . -name sdt.h -print
 ./x86_64-linux-gnu/sys/sdt.h
-$
+bash$
 ```
 該当のインクルードファイルを見てみると，以下のように定義されていた．
 ```

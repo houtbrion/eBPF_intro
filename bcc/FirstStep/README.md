@@ -127,7 +127,7 @@ C,C++の通常のprintf()とは異なり，引数は最大3個，かつ，文字
 ウィンドウでlsやlessを実行すると，以下のような出力が得られる．
 下の出力のOUTPUT部分がeBPFのCのプログラムからの出力(<code>bpf_trace_printk()</code>部分)に相当する．
 ```
-$ sudo ./printk_sample
+bash$ sudo ./printk_sample
 PID    COMM         OUTPUT
 1236   <...>        start of execve time = 242359092433 , pid = 1236, comm = bash
 1237   <...>        start of execve time = 244982436391 , pid = 1237, comm = bash
@@ -138,6 +138,6 @@ PID    COMM         OUTPUT
 1244   bash         start of execve time = 250193960378 , pid = 1244, comm = bash
 1245   lesspipe     start of execve time = 250195431447 , pid = 1245, comm = lesspipe
 1249   lesspipe     start of execve time = 250198258391 , pid = 1249, comm = lesspipe
-^C$
+^Cbash$
 ```
 

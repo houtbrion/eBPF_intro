@@ -301,8 +301,8 @@ KeyboardInterrupt
 実際は，「<code>struct sockaddr_in</code>」と「<code>struct sockaddr_in6</code>」の「<code>union</code>」となっているので，実際に格納されている
 アドレスの情報が「IPv4/IPv6」のいずれかを判別する方法が必要になる．
 ```
-    __u8 saddr[sizeof(struct sockaddr_in6)];
-    __u8 daddr[sizeof(struct sockaddr_in6)];
+__u8 saddr[sizeof(struct sockaddr_in6)];
+__u8 daddr[sizeof(struct sockaddr_in6)];
 ```
 
 ### アドレス情報の判別方法

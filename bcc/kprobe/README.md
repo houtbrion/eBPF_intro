@@ -35,13 +35,13 @@ kprobeで引数を読み出す場合は少し説明が必要になるので，�
 このプログラムを実行し，別のshellウィンドウでwgetでyahooのトップページにアクセスすると
 以下のような出力が得られる．
 ```
-$ sudo ./tcpv4connect_simple
+bash$ sudo ./tcpv4connect_simple
 PID    COMM         OUTPUT
 1469   wget         start of tcp4connect
 1469   wget         return value of tcp4connect 0
 1469   wget         start of tcp4connect
 1469   wget         return value of tcp4connect 0
-^C$
+^Cbash$
 ```
 この出力からわかるのは，yahooのトップページにアクセスすると，別のURLがyahooから返却され，その
 URLにデータを取りに行っている(再度TCPのコネクションを確立している)ことがわかる．
@@ -51,7 +51,7 @@ URLにデータを取りに行っている(再度TCPのコネクションを確�
 カーネルソースのインクルードファイルをgrepすると，対象関数の定義が参照できる．今回のサンプルでは「<code>tcp_v4_connect()</code>」を
 取り扱うので，「<code>tcp_v4_connect</code>」でインクルードファイルをgrepすると，以下の出力が得られる．
 ```
-root@venus:~# grep tcp_v4_connect /usr/src/linux-headers-5.4.0-42-generic/include/net/*
+# grep tcp_v4_connect /usr/src/linux-headers-5.4.0-42-generic/include/net/*
 grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/9p: Is a directory
 grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/bluetooth: Is a directory
 grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/caif: Is a directory
@@ -63,7 +63,7 @@ grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/phonet: Is a directory
 grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/sctp: Is a directory
 grep: /usr/src/linux-headers-5.4.0-42-generic/include/net/tc_act: Is a directory
 /usr/src/linux-headers-5.4.0-42-generic/include/net/tcp.h:int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);
-root@venus:~#
+#
 ```
 ```
 /usr/src/linux-headers-5.4.0-29-generic/include/net/tcp.h:int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len);

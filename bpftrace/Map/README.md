@@ -500,8 +500,8 @@ print(@map [, top [, divisor]])
 [公式リファレンスガイド][ref-guide]の例は説明が冗長なので，シンプルに纏めた例を下に示す．
 ```
 # bpftrace -e 'kprobe:vfs_read { @start[tid] = nsecs; }
-    kretprobe:vfs_read /@start[tid]/ {@ms[pid] = sum(nsecs - @start[tid]); delete(@start[tid]); }
-    END { print(@ms, 3,1000000); clear(@ms); clear(@start); }'
+>    kretprobe:vfs_read /@start[tid]/ {@ms[pid] = sum(nsecs - @start[tid]); delete(@start[tid]); }
+>    END { print(@ms, 3,1000000); clear(@ms); clear(@start); }'
 Attaching 3 probes...
 ^C@ms[3456]: 8
 @ms[3466]: 76

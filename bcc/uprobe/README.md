@@ -153,14 +153,14 @@ PT_REGS_RET(x)
 以下は，アプリの動作ログであるが，「<code>ret=x</code>」の部分が
 監視対象関数<code>func</code>の返り値(引数も同じ値)を表している．
 ```
-$ ./target-sample
+bash$ ./target-sample
 pid = 2562
 ret=1
 ret=2
 ret=3
 ret=4
 ^C
-$
+bash$
 ```
 
 この動作を監視した結果の出力が以下の通りで，アプリのPIDが2562，
@@ -203,7 +203,7 @@ stlenのmanページを参照するとわかるように，<code>strlen()</code>
 このプログラムを実行し，別のshellでこのディレクトリをlsすると，下のような結果が得られる．
 
 ```
-$ sudo bash
+bash$ sudo bash
 # ./strlen_snoop_simple
 TIME(s)            COMM             PID    MESSAGE
 6152.677566000     b'ls'            1572   b'length of argument string = 8.'

@@ -162,7 +162,7 @@ linuxカーネルソースの奥深くのディレクトリで
 lsを実行した場合の出力となっている．
 ```
 # BPFTRACE_STRLEN=200 bpftrace -e 'tracepoint:syscalls:sys_enter_write /pid == 3142/
-    { printf("<%s>\n", str(args->buf, args->count)); }'
+>    { printf("<%s>\n", str(args->buf, args->count)); }'
 Attaching 1 probe...
 <l>
 <s>
@@ -175,9 +175,9 @@ Attaching 1 probe...
 ```
 
 ```
-anon@ebpf:/usr/src/linux-source-5.4.0/linux-source-5.4.0/include/linux/platform_data/x86$ ls
+bash$ ls
 apple.h  asus-wmi.h  clk-lpss.h  clk-pmc-atom.h  mlxcpld.h  pmc_atom.h
-anon@ebpf:/usr/src/linux-source-5.4.0/linux-source-5.4.0/include/linux/platform_data/x86$
+bash$ 
 ```
 
 ## <code>ksym()</code>と<code>reg()</code>
@@ -374,11 +374,11 @@ Attaching 1 probe...
 もし，<code>--unsafe</code>オプション無しに実行すると次のようなエラーとなる．
 
 ```
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'kprobe:do_nanosleep { system("ps -p %d\n", pid); }'
+# bpftrace -e 'kprobe:do_nanosleep { system("ps -p %d\n", pid); }'
 stdin:1:23-48: ERROR: system() is an unsafe function being used in safe mode
 kprobe:do_nanosleep { system("ps -p %d\n", pid); }
                       ~~~~~~~~~~~~~~~~~~~~~~~~~
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Functions#
+#
 ```
 
 ## <code>exit()</code>
@@ -435,7 +435,7 @@ cgroup.procs            cpu.pressure            system.slice
 すると，対象cgroupでopenatが実行されるまでなにも出力されない．
 ```
 # bpftrace -e 'tracepoint:syscalls:sys_enter_openat /cgroup == cgroupid("/sys/fs/cgroup/unified/user.slice")/
-    { printf("%s\n", str(args->filename)); }'
+>    { printf("%s\n", str(args->filename)); }'
 Attaching 1 probe...
 ```
 
@@ -529,14 +529,14 @@ tcp:tcp_destroy_sock
 この情報を[公式リファレンスガイド][ref-guide]の例に当てはめて実行したものが以下の実行例である．
 ```
 # bpftrace -e '#include <net/ipv6.h>
-tracepoint:tcp:tcp_destroy_sock { printf("%s\n", ntop(args->daddr_v6));}'
+> tracepoint:tcp:tcp_destroy_sock { printf("%s\n", ntop(args->daddr_v6));}'
 Attaching 1 probe...
 2404:6800:4004:813::2003
 ^C
 
 # bpftrace -e '#include <net/ipv6.h>
-tracepoint:tcp:tcp_destroy_sock { printf("%s\n", ntop(AF_INET6, args->daddr_v6))
-;}'
+> tracepoint:tcp:tcp_destroy_sock { printf("%s\n", ntop(AF_INET6, args->daddr_v6))
+> ;}'
 Attaching 1 probe...
 2404:6800:4004:813::2003
 ^C
@@ -705,8 +705,7 @@ Attaching 1 probe...
     0x7f58d8e3ec16
 ]: 34
 
-# bpftrace -e 'kprobe:do_sys_open /comm == "bash"/ { @[ustack(perf,2)] = count()
-; }'
+# bpftrace -e 'kprobe:do_sys_open /comm == "bash"/ { @[ustack(perf,2)] = count(); }'
 Attaching 1 probe...
 ^C
 
@@ -734,8 +733,7 @@ Attaching 1 probe...
         7f2270834c16 0x7f2270834c16 ([unknown])
 ]: 34
 
-# bpftrace -e 'kprobe:do_sys_open /comm == "bash"/ { @[ustack(bpftrace,2)] = cou
-nt(); }'
+# bpftrace -e 'kprobe:do_sys_open /comm == "bash"/ { @[ustack(bpftrace,2)] = count(); }'
 Attaching 1 probe...
 ^C
 
@@ -916,7 +914,7 @@ override(u64 rc)
 
 ```
 # bpftrace  -e '#include <linux/sched.h>
-kprobe:__x64_sys_execve /comm == "bash"/ { override(-EACCES); }' --unsafe
+> kprobe:__x64_sys_execve /comm == "bash"/ { override(-EACCES); }' --unsafe
 Attaching 1 probe...
 ^C
 
@@ -1011,7 +1009,7 @@ Attaching 1 probe...
 必要となる．
 ```
 # bpftrace -e '#include <linux/sched.h>
-BEGIN { printf("%d\n", sizeof(struct task_struct)); }'
+> BEGIN { printf("%d\n", sizeof(struct task_struct)); }'
 Attaching 1 probe...
 9216
 ^C
@@ -1030,11 +1028,11 @@ Attaching 1 probe...
 #
 ```
 ```
-root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace --btf -e 'BEGIN { printf("%d\n", sizeof(struct task_struct)); }'
+# bpftrace --btf -e 'BEGIN { printf("%d\n", sizeof(struct task_struct)); }'
 stdin:1:24-50: ERROR: Unknown identifier: 'struct task_struct'
 BEGIN { printf("%d\n", sizeof(struct task_struct)); }
                        ~~~~~~~~~~~~~~~~~~~~~~~~~~
-root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions#
+#
 ```
 
 あと，通常のCの構造体以外の利用例は以下の通り．
@@ -1124,13 +1122,13 @@ i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }
 
 Ubuntu最新環境では動く．
 ```
-root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions# bpftrace -e 'i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }'
+# bpftrace -e 'i:s:1 { printf("%s\n", strftime("%H:%M:%S", nsecs)); }'
 Attaching 1 probe...
 02:00:11
 02:00:12
 ^C
 
-root@nebpf:/home/noro/devel/eBPF_intro/bpftrace/Functions#
+#
 ```
 
 

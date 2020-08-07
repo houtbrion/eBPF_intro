@@ -651,7 +651,7 @@ stackの情報が取れたとして，これをどう使えば嬉しいことが
 
 これ(改造版)を動かすと，以下のように「hardware events unsupported」と言われる．
 ```
-$ sudo ./map_perf_array_simple
+bash$ sudo ./map_perf_array_simple
 perf_event_open: No such file or directory
 ('error no = ', 2)
 hardware events unsupported
@@ -660,7 +660,7 @@ s
 Ran 1 test in 0.649s
 
 OK (skipped=1)
-$
+bash$
 ```
 
 いろいろ調べたところ，
@@ -672,24 +672,17 @@ $
 コンパイル時に無効になっている．
 
 ```
-$ uname -a
-Linux ebpf 5.4.0-33-generic #37-Ubuntu SMP Thu May 21 12:53:59 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
-$ cd /boot
-$ grep CONFIG_PERF_EVENTS config-5.4.0-33-generic
+bash$ uname -r
+5.4.0-42-generic
+bash$ cd /boot
+bash$ grep CONFIG_PERF_EVENTS config-5.4.0-42-generic
 CONFIG_PERF_EVENTS=y
 CONFIG_PERF_EVENTS_INTEL_UNCORE=y
 CONFIG_PERF_EVENTS_INTEL_RAPL=m
 CONFIG_PERF_EVENTS_INTEL_CSTATE=m
 # CONFIG_PERF_EVENTS_AMD_POWER is not set
-$ grep CONFIG_HW_PERF_EVENTS config-5.4.0-33-generic
-$
-```
-
-検証に利用した環境のカーネルバージョン等はは以下のとおり．
-```
-# uname -a
-Linux uvm2 5.6.0-1010-oem #10-Ubuntu SMP Thu Apr 30 08:44:50 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
-#
+bash$ grep CONFIG_HW_PERF_EVENTS config-5.4.0-42-generic
+bash$
 ```
 
 カーネルのビルドに挑戦してみるも，CONFIG_HW_PERF_EVENTSはx86ではサポートしてていないらしく，
@@ -700,7 +693,7 @@ configで選択肢にでてこない．
 
 物理サーバでやると20.04の公式版でも動く
 ```
-noro@venus:~/devel/eBPF_intro/bcc/maps$ sudo ./map_perf_array_simple
+bash$ sudo ./map_perf_array_simple
 /usr/lib/python3/dist-packages/bcc/__init__.py:296: DeprecationWarning: not a bytes object: '\nBPF_PERF_ARRAY(cnt1, NUM_CPUS);\nBPF_ARRAY(prev, u64, NUM_CPUS);\nBPF_HISTOGRAM(dist);\nint do_sys_getuid(void *ctx) {\n    u32 cpu = bpf_get_smp_processor_id();\n    u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);\n\n    if (((s64)val < 0) && ((s64)val > -256))\n        return 0;\n\n    prev.update(&cpu, &val);\n    return 0;\n}\nint do_ret_sys_getuid(void *ctx) {\n    u32 cpu = bpf_get_smp_processor_id();\n    u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);\n\n    if (((s64)val < 0) && ((s64)val > -256))\n        return 0;\n\n    u64 *prevp = prev.lookup(&cpu);\n    if (prevp)\n        dist.increment(bpf_log2l(val - *prevp));\n    return 0;\n}\n'
   text = _assert_is_bytes(text)
 /usr/lib/python3/dist-packages/bcc/__init__.py:624: DeprecationWarning: not a bytes object: 'getuid'
@@ -731,7 +724,7 @@ noro@venus:~/devel/eBPF_intro/bcc/maps$ sudo ./map_perf_array_simple
 Ran 1 test in 0.407s
 
 OK
-noro@venus:~/devel/eBPF_intro/bcc/maps$
+bash$
 ```
 
 ### 問題
@@ -822,7 +815,7 @@ inner_fn = b.load_func("handle_inner", BPF.SCHED_CLS)
 ただし，<code>load_func()</code>の第2引数にはプログラムの種類を
 指定しているが，この値はカーネルソースのヘッダに定義されている．
 ```
-/usr/src/linux-headers-5.4.0-37-generic/include/uapi/linux/bpf.h
+/usr/src/linux-headers-5.4.0-42-generic/include/uapi/linux/bpf.h
 ```
 具体的に定義されている部分は以下のようになっている．
 ```

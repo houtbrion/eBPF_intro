@@ -67,12 +67,12 @@ if not is_support_kfunc:
 ただし，Ubuntu, CentOS共に公式リポジトリのbcc(というよりpython側のライブラリ)は，
 kfuncのサポートがないため，チェックコードも動作しない．
 ```
-root@venus:/home/noro/devel/eBPF_intro/bcc/kfunc# ./check_kfunc
+# ./check_kfunc
 Traceback (most recent call last):
   File "./check_kfunc", line 5, in <module>
     is_support_kfunc = BPF.support_kfunc()
 AttributeError: type object 'BPF' has no attribute 'support_kfunc'
-root@venus:/home/noro/devel/eBPF_intro/bcc/kfunc#
+#
 ```
 
 ## 基本的な利用方法

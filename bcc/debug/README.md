@@ -65,7 +65,7 @@ CentOS8.1では使えない．
 <code>
 CONFIG_BPF_KPROBE_OVERRIDE
 </code>を有効にする必要があるので，
-CentOS8.1でカーネルのコンフィグファイルを/boot/でgrepしてみる．
+CentOS8.2でカーネルのコンフィグファイルを/boot/でgrepしてみる．
 
 ```
 [root@centos boot]# grep KPROBE_OVERRIDE config*

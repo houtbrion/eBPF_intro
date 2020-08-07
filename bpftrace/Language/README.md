@@ -355,24 +355,27 @@ mapについては，別途説明するのでそちらを参照のこと．
 
 ### 変数
 ```
-bpftrace -e 'BEGIN { $x = 0; $x++; $x++; printf("x: %d\n", $x); }'
+# bpftrace -e 'BEGIN { $x = 0; $x++; $x++; printf("x: %d\n", $x); }'
 Attaching 1 probe...
 x: 2
 ^C
+#
 ```
 
 ### map
 ```
-bpftrace -e 'k:vfs_read { @++ }'
+# bpftrace -e 'k:vfs_read { @++ }'
 ^C
 @: 12807
+#
 ```
 
 ### キーありのmap
 ```
- bpftrace -e 'k:vfs_read { @[probe]++ }'
+# bpftrace -e 'k:vfs_read { @[probe]++ }'
 ^C
  @[kprobe:vfs_read]: 13369
+#
 ```
 
 ## 配列 : <code>[]</code>
@@ -439,13 +442,13 @@ uprobe:./array_access:test_struct
 まず，監視される側のプログラムを動かすと，<code>test_struct()</code>が
 呼び出されるたびに，第1引数がダンプされる．
 ```
-$ ./array_access
+bash$ ./array_access
  y[] = 1, 2, 3, 4
  y[] = 1, 2, 3, 4
  y[] = 1, 2, 3, 4
  y[] = 1, 2, 3, 4
 ^C
-$
+bash$
 ```
 
 
@@ -610,9 +613,6 @@ terminating to watch vfs_read().
 |Ubuntu公式|×|
 |CentOS公式|○|
 |Ubuntu最新||
-
-
-
 
 bpftraceではNタプル(Nは1以上)をサポートしている．
 タプルのn番目を指定する場合は，<code>.</code>を用いる．

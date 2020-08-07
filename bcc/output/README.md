@@ -47,7 +47,7 @@ Cの20行目(<code>BPF_PERF_OUTPUT(events)</code>)の名前「<code>events</code
 ## 実行例
 <a href="perf_output_sample">perf_output_sample</a>を実行し，別のウィンドウでlsとlessを一回づつ実行した場合の出力は以下のとおり．
 ```
-$ sudo ./perf_output_sample
+bash$ sudo ./perf_output_sample
 TIME(s)            COMM             PID    MESSAGE
 829305575433       bash             1273   Hello, perf_output!
 832298483658       bash             1276   Hello, perf_output!
@@ -56,7 +56,7 @@ TIME(s)            COMM             PID    MESSAGE
 832301221961       bash             1278   Hello, perf_output!
 832301768421       lesspipe         1279   Hello, perf_output!
 832302941546       lesspipe         1283   Hello, perf_output!
-^C$
+^Cbash$
 ```
 ここで，出力されているのは<a href="perf_output_sample">perf_output_sample</a>の53と54行目の部分に相当する．
 ```

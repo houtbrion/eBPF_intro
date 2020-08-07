@@ -23,7 +23,8 @@ kprobeで使っていた<a href="../kprobe/tcpv4connect_simple">tcpv4connectを�
 情報が取得できる．
 
 ```
-root@ebpf:/sys/kernel/debug/tracing/events/syscalls/sys_enter_execve# cat format
+# cd /sys/kernel/debug/tracing/events/syscalls/sys_enter_execve
+# cat format
 name: sys_enter_execve
 ID: 700
 format:
@@ -38,7 +39,7 @@ format:
         field:const char *const * envp; offset:32;      size:8; signed:0;
 
 print fmt: "filename: 0x%08lx, argv: 0x%08lx, envp: 0x%08lx", ((unsigned long)(REC->filename)), ((unsigned long)(REC->argv)), ((unsigned long)(REC->envp))
-root@ebpf:/sys/kernel/debug/tracing/events/syscalls/sys_enter_execve#
+#
 ```
 
 一方，execveをkprobeで捉えようとするプログラムも本ディレクトリに
@@ -66,9 +67,10 @@ Exception: Failed to attach BPF program b'kprobe__execve' to kprobe b'execve'
 
 ## 利用可能なシステムコールの数
 ```
-root@ebpf:/sys/kernel/debug/tracing/events/syscalls# file * |wc -l
+# cd /sys/kernel/debug/tracing/events/syscalls
+# file * |wc -l
 666
-root@ebpf:/sys/kernel/debug/tracing/events/syscalls# ls
+# ls
 enable                            sys_enter_writev
 filter                            sys_exit_accept
 sys_enter_accept                  sys_exit_accept4

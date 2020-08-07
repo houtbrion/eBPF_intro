@@ -128,13 +128,14 @@ cgroup = 931
 |CentOS公式|○|
 |Ubuntu最新|○|
 
-
+Ubuntu公式の環境では動作しない．
 ```
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables# bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
+# bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
 Attaching 1 probe...
 Error finding or enabling probe: usdt:./usdt_sample:foo:bar
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables#
+#
 ```
+一方，他の環境では動作する．
 ```
 # bpftrace -c ./usdt_sample -e 'usdt:./usdt_sample:foo:bar { printf("cpid = %u \n", cpid); }'
 Attaching 1 probe...
@@ -165,9 +166,10 @@ cpid = 10590
 |CentOS公式|○|
 |Ubuntu最新|○|
 
+bpftraceの引数を参照するための機能を使う例を以下に示す．
 ```
 # cat posv.bt
-#!/usr/local/bin/bpftrace
+#!/usr/bin/env bpftrace
 #
 
 BEGIN{
@@ -279,14 +281,14 @@ $name
 ```
 ローカル変数は，プローブの定義から始まる節をまたいで参照することができない変数で，節をまたいで参照すると「未定義エラー」となる．
 ```
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables# bpftrace -e 'BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }'
+# bpftrace -e 'BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }'
 stdin:1:47-54: ERROR: Undefined or undeclared variable: $start
 BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }
                                               ~~~~~~~
 stdin:1:100-106: ERROR: Undefined or undeclared variable: $start
 BEGIN { $start = nsecs; } kprobe:do_nanosleep /$start != 0/ { printf("at %d ms: sleep\n", (nsecs - $start) / 1000000); }
                                                                                                    ~~~~~~
-root@venus:/home/noro/devel/eBPF_intro/bpftrace/Variables#
+#
 ```
 [公式リファレンスガイド][ref-guide]の例は，節の中でローカル変数「<code>$delta</code>」を利用して，時刻の差分を参照している．
 ```

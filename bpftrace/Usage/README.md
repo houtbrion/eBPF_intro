@@ -69,7 +69,7 @@ bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
     count syscalls by process name
 bash$
 ```
-以下のヘルプはversion0.10.0-184-g71754のもので機能が増えている．
+以下のヘルプはUbuntu最新版のbpftrace v0.11.0-56-g9fb5のもので機能が増えている．
 ```
 bash$ bpftrace
 USAGE:
@@ -147,13 +147,13 @@ Hello, World!
 
 ファイルに保存したbpftrace用のスクリプトを実行する場合，コマンドラインの末尾にスクリプトのファイル名を指定．
 ```
-$ echo 'BEGIN { printf("Hello, World!\n"); }' >foo
-$ sudo bpftrace foo
+bash$ echo 'BEGIN { printf("Hello, World!\n"); }' >foo
+bash$ sudo bpftrace foo
 Attaching 1 probe...
 Hello, World!
 ^C
 
-$
+bash$
 ```
 
 ## stdinからのbpftraceスクリプト入力 : <code>-</code>
@@ -168,12 +168,12 @@ version0.10.0からの機能
 
 コマンドラインの末尾が<code>-</code>で終わる場合，bpftraceのスクリプトをstdinから読み込む．
 ```
-$ echo 'BEGIN { printf("Hello, World!\n"); }' |sudo bpftrace -
+bash$ echo 'BEGIN { printf("Hello, World!\n"); }' |sudo bpftrace -
 Attaching 1 probe...
 Hello, World!
 ^C
 
-$
+bash$
 ```
 
 ## bpftraceを使ったコマンドの作成
@@ -223,26 +223,26 @@ bash$
 
 
 
-|環境|プローブ数|
-|:--|:--|
-|Ubuntu公式|49703|
-|CentOS公式|46281|
-|Ubuntu最新|49571|
+|環境|プローブ数|備考|
+|:--|:--|:--|
+|Ubuntu公式|50586|物理ハードの場合は51493|
+|CentOS公式|46281||
+|Ubuntu最新|49571||
 
-Ubuntu20.04のカーネルでは，4万9千個近くのプローブ可能な場所がある．
-bash$uname -a
-Linux ebpf 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+Ubuntu20.04のカーネルでは，5万個近くのプローブ可能な場所がある．
+bash$uname -r
+5.4.0-42-generic
 bash$ sudo bpftrace -l | wc -l
-49703
+50586
 bash$
 ```
 
-カーネルを5.6に上げた環境では多少減っている．
+カーネルを5.8に上げた環境では多少減っている．
 ```
-bash$ uname -a
-Linux ebpf 5.6.18 #1 SMP Wed Jul 1 00:05:32 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+bash$ uname -r
+5.8.0
 bash$ sudo bpftrace -l | wc -l
-48840
+49571
 bash$
 ```
 
@@ -287,7 +287,7 @@ tracepoint:btrfs:btrfs_inode_new
 |:--|:--|
 |Ubuntu公式|○|
 |CentOS公式|○|
-|Ubuntu最新||
+|Ubuntu最新|○|
 
 特定の名前のプローブの正式名を調べる場合，以下のようにパターンを指定すれば良い．
 ```
@@ -333,13 +333,12 @@ bash$
 |Ubuntu最新|×|同上|
 
 公式サイトの[リファレンスガイド][ref-guide]によると，BTFが利用可能な環境ではkprobe等の引数の型を調べることができると
-書いてあるものの，手元の環境(以下に示す)では，型の検索ができない．
+書いてあるものの，手元の環境(Ubuntu公式と5.8の両方のカーネルをインストールしたもの)では，5.8カーネルでも型の検索ができない．
 ```
-bash$ uname -a
-Linux ebpf 5.6.18 #1 SMP Wed Jul 1 00:05:32 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
-bash$ grep -i btf /boot/config-5.6*
-CONFIG_DEBUG_INFO_BTF=y
-bash$
+# grep CONFIG_DEBUG_INFO_BTF /boot/config-5.*
+/boot/config-5.4.0-42-generic:# CONFIG_DEBUG_INFO_BTF is not set
+/boot/config-5.8.0:CONFIG_DEBUG_INFO_BTF=y
+#
 ```
 
 
