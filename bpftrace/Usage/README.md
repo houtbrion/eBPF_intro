@@ -181,7 +181,7 @@ bash$
 |CentOS公式|○|
 |Ubuntu最新|○|
 
-以下の例はbpftraceを用いた「Hello World!」
+以下の[例][HelloWorld]はbpftraceを用いた「Hello World!」
 である．shellスクリプトと同じ仕組みで実現可能．
 ```
 bash$ cat HelloWorld

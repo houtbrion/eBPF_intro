@@ -18,13 +18,13 @@ interval:hz:rate
 ```
 </code>interval</code>は<code>rate</code>間隔でイベントを発生させる．
 時間の単位は2番目の<code>ms, s, us, hz</code>で示す．
-なお，マルチCPUの環境では注意が必要で，[ref-guide-interval][ref-guide-interval]では以下のように説明されている．
+なお，マルチCPUの環境では注意が必要で，[公式リファレンスの説明][ref-guide-interval]では以下のように記載されている．
 
 ```
 > This fires on one CPU only, and can be used for generating per-interval output.
 ```
 
-[ref-guide-interval][ref-guide-interval]のサンプルスクリプトは，
+[公式リファレンス][ref-guide-interval]のサンプルスクリプトは，
 0.9.4では動くが，0.10以上のバージョンでは，
 バグありなので以下に
 両方で動作する例を示す．下のスクリプトは1秒間隔で<code>sys_enter</code>が実行された回数を出力する．
@@ -41,7 +41,7 @@ Attaching 2 probes...
 
 #
 ```
-[ref-guide-interval][ref-guide-interval]のサンプルスクリプトは上の例の<code>zero()</code>の部分が
+[公式リファレンス][ref-guide-interval]のサンプルスクリプトは上の例の<code>zero()</code>の部分が
 <code>clear()</code>となっており，これが実行できないというエラーメッセージが出力される．
 (以下はCentOSの例)
 ```
@@ -74,7 +74,7 @@ profile:us:rate
 時間の単位は2番目の<code>ms, s, us, hz</code>で示す．
 Linuxの<code>perf</code>コマンドと同じく，<code>perf_events</code>を利用して性能データを収集するために用いる．
 
-[ref-guide][ref-guide]の例(以下に示す)は，インデック付きのmapを利用して，probeが発火した時点で動作していた
+[公式リファレンス][ref-guide]の例(以下に示す)は，インデック付きのmapを利用して，probeが発火した時点で動作していた
 スレッド(実態はプロセス)のtidをキーとして動作の回数を<code>count()</code>で数えている．
 なお，mapについては後に述べる．
 ```
@@ -109,7 +109,7 @@ kprobe:function_name[+offset]
 kretprobe:function_name
 ```
 <code>kprobe</code>は監視対象の関数実行開始直後を捉え，<code>kretprobe</code>は実行終了直前を捉える．
-[ref-guide][ref-guide]が示している以下の例は，<code>nanosleep()</code>関数をなにかの
+[公式リファレンス][ref-guide]が示している以下の例は，<code>nanosleep()</code>関数をなにかの
 プロセスが実行した場合に，それを捉えて<code>tid</code>を出力するものである．
 ```
 # bpftrace -e 'kprobe:do_nanosleep { printf("sleep by %d\n", tid); }'
@@ -195,7 +195,7 @@ Setting up linux-image-5.4.0-42-generic-dbgsym (5.4.0-42.46) ...
 ```
 
 文法のところで示されているように，監視対象を関数だけでなく，関数の入り口からのオフセットで
-指定することができる．[ref-guide][ref-guide]の例を手元の環境で実行した例を以下に示す．
+指定することができる．[公式リファレンス][ref-guide]の例を手元の環境で実行した例を以下に示す．
 
 ```
 # gdb -q /usr/lib/debug/boot/vmlinux-`uname -r` --ex 'disassemble do_sys_open'
@@ -228,7 +228,7 @@ Quit
 #
 ```
 
-[ref-guide][ref-guide]でも紹介されているが，offセットとして指定できる値は上の出力結果の一部(以下に引用)を
+[公式リファレンス][ref-guide]でも紹介されているが，offセットとして指定できる値は上の出力結果の一部(以下に引用)を
 参照することでわかる．下に引用した出力結果のうち，<code><+n></code>の<code>n</code>の値である．
 ```
    0xffffffff812e9d40 <+0>:     callq  0xffffffff81c01940 <__fentry__>

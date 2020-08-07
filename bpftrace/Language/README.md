@@ -612,7 +612,7 @@ terminating to watch vfs_read().
 |:--|:--|
 |Ubuntu公式|×|
 |CentOS公式|○|
-|Ubuntu最新||
+|Ubuntu最新|○|
 
 bpftraceではNタプル(Nは1以上)をサポートしている．
 タプルのn番目を指定する場合は，<code>.</code>を用いる．
