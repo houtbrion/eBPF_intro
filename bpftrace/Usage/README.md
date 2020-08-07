@@ -69,6 +69,7 @@ bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[comm] = count(); }'
     count syscalls by process name
 bash$
 ```
+
 以下のヘルプはUbuntu最新版のbpftrace v0.11.0-56-g9fb5のもので機能が増えている．
 ```
 bash$ bpftrace
@@ -163,9 +164,6 @@ bash$
 |CentOS公式|○|
 |Ubuntu最新|○|
 
-version0.10.0からの機能
-
-
 コマンドラインの末尾が<code>-</code>で終わる場合，bpftraceのスクリプトをstdinから読み込む．
 ```
 bash$ echo 'BEGIN { printf("Hello, World!\n"); }' |sudo bpftrace -
@@ -183,8 +181,17 @@ bash$
 |CentOS公式|○|
 |Ubuntu最新|○|
 
-以下の例はbpftraceを用いて"Hello World!"を実現する[プログラム][HelloWorld]を作成する例である．
-shellスクリプトと同じ仕組みで実現可能．
+[プログラム][HelloWorld]
+
+以下の例はbpftraceを用いた「Hello World!」
+
+
+[プログラム][HelloWorld]
+
+[HelloWorld][HelloWorld]
+
+
+である．shellスクリプトと同じ仕組みで実現可能．
 ```
 bash$ cat HelloWorld
 #!/usr/bin/env bpftrace
@@ -723,8 +730,10 @@ bpftraceにはプログラム中で<code>cat()</code>関数を用いて，ファ
 ```
 
 <!-- 参考文献リスト -->
-[ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md >  "公式リファレンスガイド"
+[ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md>  "公式リファレンスガイド"
+
 [HelloWorld]: <HelloWorld> "HelloWorld"
+
 [printhelp]: <printhelp> "printhelp"
 [include_example.bt]: <include_example.bt> "include_example.bt"
 [BPFTRACE_NO_USER_SYMBOLS]: <https://github.com/iovisor/bcc/issues/2421> "bcc_symcache_resolve uses too much memory #2421"

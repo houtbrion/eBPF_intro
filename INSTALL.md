@@ -19,7 +19,6 @@ Ubuntu20.04LTSは1.5系列しか利用できないため，個別に
 
 paholeコマンドは，dwarvesパッケージに含まれており，
 既にインストール済の場合はアンイストールしておく．
-
 インストールしていない場合，ビルドにlibdw-devが
 必要になるため，これはインストールしておく．
 
@@ -130,16 +129,13 @@ make -j$(grep -c processor /proc/cpuinfo) bindeb-pkg
 ビルド終了後，
 必要なパッケージがビルドできているか確認．
 ```
-bash$ ls
+bash$ ls../
 linux-5.8                            linux-headers-5.8.0_5.8.0-1_amd64.deb
 linux-5.8.0_5.8.0-1_amd64.buildinfo  linux-image-5.8.0_5.8.0-1_amd64.deb
 linux-5.8.0_5.8.0-1_amd64.changes    linux-image-5.8.0-dbg_5.8.0-1_amd64.deb
 linux-5.8.tar.xz                     linux-libc-dev_5.8.0-1_amd64.deb
 bash$
 ```
-
-ソースをダウンロードしたときは，5.6.19を指定していたはずなのに，
-ビルドしてみると，5.7.0-rc7だった(謎)．
 
 ### カーネルインストール
 生成されたdebファイルを全てインストール．

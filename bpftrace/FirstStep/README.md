@@ -253,7 +253,7 @@ Good bye.
 ```
 
 <!-- 参考文献リスト -->
-[ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md >  "公式リファレンスガイド"
+[ref-guide]: <https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md>  "公式リファレンスガイド"
 [hello_bye_sample.bt]: <hello_bye_sample.bt> "hello_bye_sample.bt"
 [hello_bye_auto.bt]: <hello_bye_auto.bt> "hello_bye_auto.bt"
 [hello_bye_timerup.bt]: <hello_bye_timerup.bt> "hello_bye_timerup.bt"
