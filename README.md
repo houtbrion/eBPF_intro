@@ -32,7 +32,7 @@ eBPFを使ったプログラミングをこれから始める人，始めては�
 [bcc][bcc]や[bpftrace][bpftrace]は頻繁にバージョンアップしているが，本ドキュメントは
 追従していないので，本ドキュメントである程度経験を積んだ後は公式リファレンスガイドを参照していただきたい．
 
-## 想定している環境
+## 想定環境
 本ドキュメントで利用した環境は以下の3種類．
 |種類|OS|カーネル|bcc|bpftrace|備考|
 |--:|:--|:--|:--|:--|:--|
@@ -43,46 +43,6 @@ eBPFを使ったプログラミングをこれから始める人，始めては�
 この3つの環境のうちメインはUbuntu公式である．bpftraceの新しいバージョンは
 機能が多い代わりに，バグが多いため初心者にはおすすめできない．残りの2つは
 カーネルの違いによる差や新機能の入門のために用意している．
-
-### Ubuntu公式環境のセットアップ
-Ubuntu20.4とパッケージ版の組み合わせを作る場合は，公式の
-[bccのインストールマニュアル][bcc-install]と
-[bpftraceのインストールマニュアル][bpftrace-install]を見て
-インストールしていただきたい．
-
-あと，Pythonは基本v3を利用しているが，
-本ドキュメントで引用(コピーを収録)している公式リポジトリのサンプルプログラムが，
-Python2系を要求するものがあるため，pythonとpipは両方のバージョンを
-インストールしてください．
-
-本ドキュメントでも取り扱っているUSDTを使うため，DTraceの環境を入れる必要がある．
-```
-# apt install systemtap-sdt-dev
-```
-
-### CentOSのセットアップ
-CentOSで環境を構築する場合，基本は[bccのインストールマニュアル][bcc-install]のRedHatの部分
-を見て
-インストールしていただきたい．
-
-ただし，CentOSも8.2の環境だと特別な手順が必要である．
-まず，
-bccが使っているPythonは今でも2のものが残っており，Python2とpipを入れる必要がある．
-ただし，bccのパッケージが依存しているものはPython2の他に，Python2のnetaddrがあるが，CentOS8.2にPython2用netaddrは存在しないため，
-bccのパッケージ(bcc-tools)は強制インストールする必要がある．
-```
-# dnf install bcc-tools --nobest
-```
-
-その後，必要に応じてpipで
-netaddrをインストールする．
-
-bpftraceは，CentOS8.2用のパッケージが存在するため，それをインストールしていただきたい．
-```
-dnf install bpftrace
-```
-
-最後に，bccに付属しているツールはPATHに入らないため，自分でパスに追加(.bashrcなど)してください．
 
 ### カーネルやbcc, bpftraceのアップデートの必要性
 bccのリポジトリに機能とカーネルバージョンの関係を記述した[文書][kernel-version]が
@@ -117,8 +77,19 @@ OSやカーネルのバージョンについて記載しているので，必要
 もし，カーネルのバージョンアップが必要ない場合は，
 bccのインストールまで飛ばして構わない．
 
+### UbuntuもしくはCentOS公式パッケージを利用する場合
+UbuntuもしくはCentOSでOS公式パッケージを利用する場合，
+[セットアップ文書][setup]を見て，必要なパッケージを
+インストールしてください．
+
+### VMの利用
+Ubuntu公式の環境をセットアップしたVMを当面提供しているので，それを
+利用する場合は，[VM利用方法][VMsetup]を読んで自分の環境に
+VMを展開していただきたい．
+
 ### カーネルのアップデートやbcc, bpftrace最新版のインストール方法
-新しい機能を利用したい場合は[インストール][install]を見て，
+新しい機能を利用したい場合はUbuntu20.04をインストールした後，
+[インストール][install]を見て，
 カーネルやbcc, bpftraceをソースからインストールして
 いただきたい．
 
@@ -132,7 +103,6 @@ bccのインストールまで飛ばして構わない．
 
 
 ## 目次
-- [インストール][install]
 - [bpftrace入門][bpftrace-intro]
 - [bcc入門][bcc-intro]
 
@@ -147,9 +117,10 @@ bccのインストールまで飛ばして構わない．
 [bcc-ref-guide]: <https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md> "bcc公式リファレンスガイド"
 [kernel-version]: <https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md> "bccの機能と利用可能なカーネルバージョンの対応関係"
 [install]: <INSTALL.md> "インストールドキュメント"
+[setup]: <SETUP.md> "UbuntuとCentOSのセットアップ"
 [license]: <LICENSE> "ライセンスファイル"
 [bpftrace-intro]: <bpftrace/README.md> "bpftrace入門"
 [bcc-intro]: <bcc/README.md> "bcc入門"
-
+[VMsetup]: <VM_SETUP.md> "VMの利用"
 
 
