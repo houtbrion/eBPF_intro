@@ -1,0 +1,6 @@
+ 1: #!/usr/bin/env bpftrace
+ 2: #
+ 3: 
+ 4: BEGIN{
+ 5:   printf("$1 = %u, $2 = %u, $# = %u\n",$1,$2,$#);
+ 6: }

@@ -1,0 +1,129 @@
+  1: #!/usr/bin/python3
+  2: #
+  3: # xdp_redirect_cpu.py Redirect the incoming packet to the specific CPU
+  4: #
+  5: # Copyright (c) 2018 Gary Lin
+  6: # Licensed under the Apache License, Version 2.0 (the "License")
+  7: 
+  8: from bcc import BPF
+  9: import time
+ 10: import sys
+ 11: from multiprocessing import cpu_count
+ 12: import ctypes as ct
+ 13: from bcc.utils import printb
+ 14: 
+ 15: flags = 0
+ 16: def usage():
+ 17:     print("Usage: {0} <in ifdev> <CPU id>".format(sys.argv[0]))
+ 18:     print("e.g.: {0} eth0 2\n".format(sys.argv[0]))
+ 19:     exit(1)
+ 20: 
+ 21: if len(sys.argv) != 3:
+ 22:     usage()
+ 23: 
+ 24: in_if = sys.argv[1]
+ 25: cpu_id = int(sys.argv[2])
+ 26: 
+ 27: max_cpu = cpu_count()
+ 28: if (cpu_id > max_cpu):
+ 29:     print("Invalid CPU id")
+ 30:     exit(1)
+ 31: 
+ 32: # load BPF program
+ 33: b = BPF(text = """
+ 34: #define KBUILD_MODNAME "foo"
+ 35: #include <uapi/linux/bpf.h>
+ 36: #include <linux/in.h>
+ 37: #include <linux/if_ether.h>
+ 38: #include <linux/ip.h>
+ 39: #define ICMP 1
+ 40: 
+ 41: BPF_CPUMAP(cpumap, __MAX_CPU__);
+ 42: //BPF_ARRAY(dest, uint32_t, 1);
+ 43: //BPF_PERCPU_ARRAY(rxcnt, long, 1);
+ 44: 
+ 45: static inline void swap_src_dst_mac(void *data)
+ 46: {
+ 47:     unsigned short *p = data;
+ 48:     unsigned short dst[3];
+ 49: 
+ 50:     dst[0] = p[0];
+ 51:     dst[1] = p[1];
+ 52:     dst[2] = p[2];
+ 53:     p[0] = p[3];
+ 54:     p[1] = p[4];
+ 55:     p[2] = p[5];
+ 56:     p[3] = dst[0];
+ 57:     p[4] = dst[1];
+ 58:     p[5] = dst[2];
+ 59: }
+ 60: 
+ 61: int xdp_redirect_cpu(struct xdp_md *ctx) {
+ 62:     void* data_end = (void*)(long)ctx->data_end;
+ 63:     void* data = (void*)(long)ctx->data;
+ 64:     struct ethhdr *eth = data;
+ 65:     uint32_t key = 0;
+ 66:     //long *value;
+ 67:     uint32_t *cpu;
+ 68:     uint64_t nh_off;
+ 69: 
+ 70:     nh_off = sizeof(*eth);
+ 71:     if (data + nh_off  > data_end)
+ 72:         return XDP_DROP;
+ 73: 
+ 74:     if (eth->h_proto == htons(ETH_P_IP)) {
+ 75:         //bpf_trace_printk("bar packet\\n");
+ 76:         struct iphdr *iph = data + nh_off;
+ 77:         if ((void*)&iph[1] > data_end)
+ 78:             return XDP_DROP;
+ 79: 
+ 80:         if (iph->protocol == ICMP) {
+ 81:             bpf_trace_printk("bar packet\\n");
+ 82:             //u64 zero=0;
+ 83:             //value = rxcnt.lookup_or_try_init(&key, &zero);
+ 84:             //if (value)
+ 85:             //    *value += 1;
+ 86:             swap_src_dst_mac(data);
+ 87:             return cpumap.redirect_map(*cpu, 0);
+ 88:         }
+ 89:     }
+ 90: 
+ 91:     //cpu = dest.lookup(&key);
+ 92:     //if (!cpu)
+ 93:     //    return XDP_PASS;
+ 94: 
+ 95:     return XDP_PASS;
+ 96: }
+ 97: 
+ 98: int xdp_dummy(struct xdp_md *ctx) {
+ 99:     return XDP_PASS;
+100: }
+101: """, cflags=["-w", "-D__MAX_CPU__=%u" % max_cpu], debug=0)
+102: 
+103: #dest = b.get_table("dest")
+104: #dest[0] = ct.c_uint32(cpu_id)
+105: 
+106: cpumap = b.get_table("cpumap")
+107: cpumap[cpu_id] = ct.c_uint32(192)
+108: 
+109: in_fn = b.load_func("xdp_redirect_cpu", BPF.XDP)
+110: b.attach_xdp(in_if, in_fn, flags)
+111: 
+112: # header
+113: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+114: 
+115: # filter and format output
+116: while 1:
+117:         # Read messages from kernel pipe
+118:         try:
+119:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+120:         except ValueError:
+121:             # Ignore messages from other tracers
+122:             continue
+123:         except KeyboardInterrupt:
+124:             print("Removing filter from device")
+125:             break
+126: 
+127:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+128: 
+129: b.remove_xdp(in_if, flags)

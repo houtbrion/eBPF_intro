@@ -1,0 +1,28 @@
+ 1: #include <stdio.h>
+ 2: #include <unistd.h>
+ 3: 
+ 4: struct MyStruct {
+ 5: 	int y[4];
+ 6: };
+ 7: 
+ 8: void test_struct(struct MyStruct *var){
+ 9: 	printf(" y[] = %d, %d, %d, %d\n",
+10: 			var->y[0],
+11: 			var->y[1],
+12: 			var->y[2],
+13: 			var->y[3]
+14: 			);
+15: }
+16: 
+17: void main(){
+18: 	struct MyStruct myStruct;
+19: 	for (int i=0; i<4 ; i++) {
+20: 		myStruct.y[i]=i+1;
+21: 	}
+22: 	while (1) {
+23: 		for (int i=0; i<4 ; i++) {
+24: 			test_struct(&myStruct);
+25: 			sleep(1);
+26: 		}
+27: 	}
+28: }

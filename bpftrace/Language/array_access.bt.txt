@@ -1,0 +1,9 @@
+ 1: struct MyStruct { int y[4]; }
+ 2: uprobe:./array_access:test_struct
+ 3: {
+ 4:   printf("y[]= %d, %d, %d, %d\n",
+ 5:     ((struct MyStruct *) arg0)->y[0],
+ 6:     ((struct MyStruct *) arg0)->y[1],
+ 7:     ((struct MyStruct *) arg0)->y[2],
+ 8:     ((struct MyStruct *) arg0)->y[3]);
+ 9: }

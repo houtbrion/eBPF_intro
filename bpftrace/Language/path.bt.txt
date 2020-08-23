@@ -1,0 +1,7 @@
+ 1: #include <linux/path.h>
+ 2: #include <linux/dcache.h>
+ 3: 
+ 4: kprobe:vfs_open
+ 5: {
+ 6: 	printf("open path: %s\n", str(((struct path *)arg0)->dentry->d_name.name));
+ 7: }

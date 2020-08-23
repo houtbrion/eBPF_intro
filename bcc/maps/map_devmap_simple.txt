@@ -1,0 +1,74 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: # https://github.com/iovisor/bcc/blob/master/examples/networking/xdp/xdp_drop_count.py
+  4: # https://qiita.com/sg-matsumoto/items/8194320db32d4d8f7a16
+  5: 
+  6: from __future__ import print_function
+  7: from bcc import BPF
+  8: import sys
+  9: import time
+ 10: #from bcc.utils import printb
+ 11: 
+ 12: # define BPF program
+ 13: bpf_text = """
+ 14: #include <uapi/linux/bpf.h>
+ 15: #include <linux/ip.h>
+ 16: #define ICMP 1
+ 17: BPF_HASH(pktcnt, u32, u32);
+ 18: BPF_DEVMAP(ifmap, 1);
+ 19: 
+ 20: int xdp_count_icmp(struct xdp_md *ctx){
+ 21:     void* data_end = (void*)(long)ctx->data_end;
+ 22:     void* data = (void*)(long)ctx->data;
+ 23:     struct ethhdr *eth = data;
+ 24:     u32 value = 0, *vp;
+ 25:     u32 protocol;
+ 26:     u64 nh_off = sizeof(*eth);
+ 27: 
+ 28:     if (data + nh_off > data_end)
+ 29:         return XDP_PASS;
+ 30: 
+ 31:     if (eth->h_proto == htons(ETH_P_IP)) {
+ 32:         struct iphdr *iph = data + nh_off;
+ 33:         if ((void*)&iph[1] > data_end)
+ 34:             return XDP_PASS;
+ 35: 
+ 36:         protocol = iph->protocol;
+ 37:         if (protocol == ICMP) {
+ 38:             vp = pktcnt.lookup_or_init(&protocol, &value);
+ 39:             *vp += 1;
+ 40:             return XDP_PASS;
+ 41:         }
+ 42:     }
+ 43:     return XDP_PASS;
+ 44: }
+ 45: """
+ 46: 
+ 47: b = BPF(text = bpf_text)
+ 48: fn = b.load_func("xdp_count_icmp", BPF.XDP)
+ 49: 
+ 50: #device = sys.argv[1]
+ 51: #device = "enp0s3"
+ 52: device = "lo"
+ 53: 
+ 54: b.attach_xdp(device, fn)
+ 55: #pktcnt = b.get_table("pktcnt")
+ 56: pktcnt = b["pktcnt"]
+ 57: ifmap = b["ifmap"]
+ 58: 
+ 59: #for k, v in ifmap.items():
+ 60: #    print("table number = {} i/f number =  {}".format(k.value, v.value))
+ 61: while True:
+ 62:     try:
+ 63:         pktcnt.clear()
+ 64:         time.sleep(1)
+ 65:         for k, v in pktcnt.items():
+ 66:             print("{} {}: {} pkt/s".format(time.strftime("%H:%M:%S"), k.value, v.value))
+ 67:     except KeyboardInterrupt:
+ 68:         break
+ 69: 
+ 70: b.remove_xdp(device)
+ 71: 
+ 72: 
+ 73: 
+ 74: 

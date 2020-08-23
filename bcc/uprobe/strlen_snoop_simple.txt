@@ -1,0 +1,42 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: from os import getpid
+ 6: 
+ 7: # eBPFのプログラムを文字列として定義
+ 8: bpf_text = """
+ 9: #include <uapi/linux/ptrace.h>
+10: int printarg(struct pt_regs *ctx) {
+11:     if (!PT_REGS_PARM1(ctx))
+12:         return 0;
+13: 
+14:     bpf_trace_printk("length of argument string = %d.\\n",sizeof(PT_REGS_PARM1(ctx)));
+15: 
+16:     return 0;
+17: };
+18: """
+19: 
+20: # Cのソース(文字列)をロードさせる
+21: b = BPF(text=bpf_text)
+22: 
+23: # eBPFのvmをlibc.soのstrlenに割り付け
+24: b.attach_uprobe(name="c", sym="strlen", fn_name="printarg")
+25: 
+26: # header出力
+27: print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MESSAGE"))
+28: 
+29: # 自分のpidを取得
+30: me = getpid()
+31: while 1:
+32:     try:
+33:         (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+34:     except ValueError:
+35:         continue
+36:     except KeyboardInterrupt:
+37:         # Ctrl-Cでループから脱出
+38:         exit()
+39:     # strlenを呼び出したのが自分でなければ出力
+40:     if pid == me or msg == "":
+41:         continue
+42:     print("%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))

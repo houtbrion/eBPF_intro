@@ -1,0 +1,18 @@
+ 1: #include <stdio.h>
+ 2: #include <unistd.h>
+ 3: 
+ 4: unsigned int func(unsigned int counter) {
+ 5: 	return counter;
+ 6: }
+ 7: 
+ 8: void main(){
+ 9: 	unsigned int counter=0;
+10: 	pid_t pid=getpid();
+11: 	printf("pid = %d\n",pid);
+12: 	while(1) {
+13: 		counter++;
+14: 		unsigned int ret=func(counter);
+15: 		printf("ret=%d\n",ret);
+16: 		sleep(1);
+17: 	}
+18: }

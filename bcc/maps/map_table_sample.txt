@@ -1,0 +1,65 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF
+  5: from bcc.utils import printb
+  6: import time
+  7: 
+  8: # eBPFのソースを文字列として定義
+  9: bpf_text = """
+ 10: #define USE_ARRAY  // BPF_TABLE と BPF_ARRAY のいずれを使うかをここで切り替え
+ 11: 
+ 12: #ifndef USE_ARRAY
+ 13: BPF_TABLE("array", uint32_t, long, uidcnt, 2); // BPF_TABLEの場合
+ 14: //// mount -o nosuid,nodev,noexec,mode=700 -t bpf bpf /sys/fs/bpf
+ 15: //BPF_TABLE_PINNED("array", uint32_t, long, uidcnt, 2, "/sys/fs/bpf/uidcnt");  // PINNED_TABLEはうまく動かない
+ 16: #else
+ 17: BPF_ARRAY(uidcnt, long, 2);  // BPF_ARRAYの場合
+ 18: #endif
+ 19: 
+ 20: int syscall__execve(struct pt_regs *ctx)
+ 21: {
+ 22:     // execveを呼び出したプロセスのuidを取得
+ 23:     u64 ugid = bpf_get_current_uid_gid();
+ 24:     u32 uid = ugid;  // 取得した値の下32bitがuid
+ 25:     u32  idx;
+ 26:     if (uid == 0) {  // uidがrootか否かで分別
+ 27:         idx = 0;
+ 28:     } else {
+ 29:         idx = 1;
+ 30:     }
+ 31:     long *value;
+ 32:     value = uidcnt.lookup(&idx); // 表のエントリを取得
+ 33:     if (value) {
+ 34:         // エントリが取得できたら更新
+ 35:         uidcnt.increment(idx);
+ 36:     }
+ 37: 
+ 38:     return 0;
+ 39: };
+ 40: """
+ 41: 
+ 42: # eBPFのブログラムをロード
+ 43: b = BPF(text=bpf_text)
+ 44: # eBPFのプログラムをexecveのkprobeに割当て
+ 45: execve_fnname = b.get_syscall_fnname("execve")
+ 46: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+ 47: 
+ 48: # 表を定義
+ 49: uidcnt = b.get_table("uidcnt")
+ 50: 
+ 51: # eBPFの出力を受信して表示するループ
+ 52: while 1:
+ 53:     print("----new round-----")
+ 54:     try:
+ 55:         for k in uidcnt.keys():  # 表のキーでループを回す
+ 56:             val = uidcnt[k].value
+ 57:             i = k.value
+ 58:             print("{}: {} uid/count".format(i, val))
+ 59:         uidcnt.clear() # 表をクリア
+ 60:         time.sleep(1)  # 1秒待機
+ 61:     except KeyboardInterrupt:
+ 62:         # Ctrl-Cでループを抜ける
+ 63:         exit()
+ 64: 
+ 65: 

@@ -1,0 +1,8 @@
+ 1: uprobe:./target-sample:func
+ 2: {
+ 3:         printf("%lu, func, start, pid = %d, tid = %d, arg    = %d \n",nsecs, pid, tid, arg0);
+ 4: }
+ 5: uretprobe:./target-sample:func
+ 6: {
+ 7:         printf("%lu, func, end,   pid = %d, tid = %d, retval = %d\n",nsecs, pid, tid, retval);
+ 8: }

@@ -1,0 +1,68 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF ,utils
+  5: from bcc.utils import printb
+  6: 
+  7: # eBPFプログラムのソースを文字列として定義
+  8: bpf_text = """
+  9: #include <uapi/linux/ptrace.h>
+ 10: 
+ 11: // カウンタ用の表を定義
+ 12: // CPU毎に要素を変える
+ 13: BPF_PERCPU_ARRAY(connect_cnt, long, 1);
+ 14: 
+ 15: int kprobe__tcp_v4_connect(struct pt_regs *ctx)
+ 16: {
+ 17:         bpf_trace_printk("start of tcp4connect\\n");
+ 18:         int zero=0;
+ 19:         // 表の要素のうち，tcp_v4_connect()を実行したプロセスが
+ 20:         // 動かいているCPUのIDに対応したものが更新される
+ 21:         connect_cnt.increment(zero);
+ 22:         return 0;
+ 23: };
+ 24: """
+ 25: 
+ 26: # プログラムをVMにロードinitialize BPF
+ 27: b = BPF(text=bpf_text)
+ 28: 
+ 29: # 表を取得
+ 30: connect_cnt=b["connect_cnt"]
+ 31: 
+ 32: # ヘッダを印刷
+ 33: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+ 34: 
+ 35: # eBPFの終了を受信してoutput
+ 36: while 1:
+ 37:         # Read messages from kernel pipe
+ 38:         try:
+ 39:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+ 40:         except ValueError:
+ 41:             # Ignore messages from other tracers
+ 42:             continue
+ 43:         except KeyboardInterrupt:
+ 44:             # Ctrl-Cでループから脱出
+ 45:             break
+ 46: 
+ 47:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+ 48: 
+ 49: print("")
+ 50: # 表の各要素の値を合計して出力
+ 51: val = connect_cnt.sum(0).value
+ 52: print("tcp connects total ", val , " times")
+ 53: 
+ 54: # 表のクラスがサポートするメンバ関数は以下のファイルのクラス定義を参照
+ 55: # https://github.com/iovisor/bcc/blob/master/src/python/bcc/table.py
+ 56: # class PerCpuArray(ArrayBase):
+ 57: 
+ 58: # 表の値の列だけを取り出し
+ 59: val = connect_cnt.getvalue(0)
+ 60: 
+ 61: # 動作しているCPU数を取得
+ 62: num_cpus = len(utils.get_online_cpus())
+ 63: 
+ 64: # 表の値をループで出力
+ 65: for i in range(num_cpus):
+ 66:     print("val[", i ,"] = ",val[i])
+ 67: 
+ 68: 

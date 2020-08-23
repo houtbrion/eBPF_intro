@@ -1,0 +1,132 @@
+  1: #!/usr/bin/python3
+  2: #
+  3: # xdp_redirect_map.py Redirect the incoming packet to another interface
+  4: #                     with the helper: bpf_redirect_map()
+  5: #
+  6: # Copyright (c) 2018 Gary Lin
+  7: # Licensed under the Apache License, Version 2.0 (the "License")
+  8: 
+  9: from bcc import BPF
+ 10: import pyroute2
+ 11: import time
+ 12: import sys
+ 13: import ctypes as ct
+ 14: from bcc.utils import printb
+ 15: 
+ 16: flags = 0
+ 17: def usage():
+ 18:     print("Usage: {0} <in ifdev> <out ifdev>".format(sys.argv[0]))
+ 19:     print("e.g.: {0} eth0 eth1\n".format(sys.argv[0]))
+ 20:     exit(1)
+ 21: 
+ 22: if len(sys.argv) != 3:
+ 23:     usage()
+ 24: 
+ 25: #in_if = sys.argv[1]
+ 26: #out_if = sys.argv[2]
+ 27: in_if = "lo0"
+ 28: #in_if = "enp0s3"
+ 29: out_if = "enp0s3"
+ 30: 
+ 31: ip = pyroute2.IPRoute()
+ 32: out_idx = ip.link_lookup(ifname=out_if)[0]
+ 33: #out_idx = ip.link_lookup(ifname=out_if)
+ 34: print("out_idx = ", out_idx)
+ 35: 
+ 36: # load BPF program
+ 37: b = BPF(text = """
+ 38: #define KBUILD_MODNAME "foo"
+ 39: #include <uapi/linux/bpf.h>
+ 40: #include <linux/in.h>
+ 41: #include <linux/if_ether.h>
+ 42: #include <linux/ip.h>
+ 43: #define ICMP 1
+ 44: 
+ 45: BPF_DEVMAP(tx_port, 1);
+ 46: BPF_PERCPU_ARRAY(rxcnt, long, 1);
+ 47: 
+ 48: static inline void swap_src_dst_mac(void *data)
+ 49: {
+ 50:     unsigned short *p = data;
+ 51:     unsigned short dst[3];
+ 52: 
+ 53:     dst[0] = p[0];
+ 54:     dst[1] = p[1];
+ 55:     dst[2] = p[2];
+ 56:     p[0] = p[3];
+ 57:     p[1] = p[4];
+ 58:     p[2] = p[5];
+ 59:     p[3] = dst[0];
+ 60:     p[4] = dst[1];
+ 61:     p[5] = dst[2];
+ 62: }
+ 63: 
+ 64: int xdp_redirect_map(struct xdp_md *ctx) {
+ 65:     void* data_end = (void*)(long)ctx->data_end;
+ 66:     void* data = (void*)(long)ctx->data;
+ 67:     struct ethhdr *eth = data;
+ 68:     uint32_t key = 0;
+ 69:     long *value;
+ 70:     uint64_t nh_off;
+ 71: 
+ 72:     nh_off = sizeof(*eth);
+ 73:     if (data + nh_off  > data_end)
+ 74:         return XDP_DROP;
+ 75: 
+ 76:     bpf_trace_printk("foo2 packet\\n");
+ 77:     if (eth->h_proto == htons(ETH_P_IP)) {
+ 78:         bpf_trace_printk("bar packet\\n");
+ 79:         struct iphdr *iph = data + nh_off;
+ 80:         if ((void*)&iph[1] > data_end)
+ 81:             return XDP_DROP;
+ 82: 
+ 83:         if (iph->protocol == ICMP) {
+ 84:             //value = rxcnt.lookup(&key);
+ 85:             u64 zero=0;
+ 86:             value = rxcnt.lookup_or_try_init(&key, &zero);
+ 87:             if (value)
+ 88:                 *value += 1;
+ 89:             swap_src_dst_mac(data);
+ 90:             return tx_port.redirect_map(0, 0);
+ 91:         }
+ 92:     }
+ 93:     return XDP_PASS;
+ 94: }
+ 95: 
+ 96: int xdp_dummy(struct xdp_md *ctx) {
+ 97:     bpf_trace_printk("foo3 packet\\n");
+ 98:     return XDP_PASS;
+ 99: }
+100: """, cflags=["-w"])
+101: 
+102: tx_port = b.get_table("tx_port")
+103: tx_port[0] = ct.c_int(out_idx)
+104: 
+105: in_fn = b.load_func("xdp_redirect_map", BPF.XDP)
+106: out_fn = b.load_func("xdp_dummy", BPF.XDP)
+107: 
+108: b.attach_xdp(in_if, in_fn, flags)
+109: b.attach_xdp(out_if, out_fn, flags)
+110: 
+111: rxcnt = b.get_table("rxcnt")
+112: prev = 0
+113: print("Printing redirected packets, hit CTRL+C to stop")
+114: 
+115: # header
+116: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+117: 
+118: # filter and format output
+119: while 1:
+120:         # Read messages from kernel pipe
+121:         try:
+122:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+123:         except ValueError:
+124:             # Ignore messages from other tracers
+125:             continue
+126:         except KeyboardInterrupt:
+127:             break
+128: 
+129:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+130: 
+131: b.remove_xdp(in_if, flags)
+132: b.remove_xdp(out_if, flags)

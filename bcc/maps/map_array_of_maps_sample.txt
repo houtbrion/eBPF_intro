@@ -1,0 +1,146 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF
+  5: import time
+  6: import ctypes as ct
+  7: 
+  8: # eBPFのソースを文字列として定義
+  9: bpf_text = """
+ 10: #include <linux/sched.h>
+ 11: 
+ 12: // 監視対象がbashとbshなのでそれの文字列と文字列長を定義
+ 13: #define BASH "bash"
+ 14: #define BASHLEN 4
+ 15: #define SHELL "sh"
+ 16: #define SHELLLEN 2
+ 17: 
+ 18: // 監視対象のシステムコールを実行したプロセス名を格納するための変数型
+ 19: struct key_t {
+ 20:     char comm[TASK_COMM_LEN];
+ 21: };
+ 22: 
+ 23: // 表の定義
+ 24: BPF_TABLE("array", uint32_t, long, bashcnt, 2); // bash用の内部表
+ 25: BPF_TABLE("array", uint32_t, long, shcnt, 2);   // shell用の内部表
+ 26: BPF_ARRAY_OF_MAPS(map_array, "bashcnt", 2);     // 上記の2つの表を束ねる外部表
+ 27: 
+ 28: // 文字列が"bash"と一致するか否かを判定する関数
+ 29: static inline bool compare_with_bash(char *str) {
+ 30:     char target[BASHLEN];
+ 31:     bpf_probe_read(&target, sizeof(target), str); // 引数をローカル変数にコピー
+ 32:     char bash[]="bash";
+ 33:     // eBPFは文字列系の関数はないので面倒な手順が必要
+ 34:     for (int i=0; i< BASHLEN; i++){
+ 35:         if (target[i] != bash[i]) return false;
+ 36:     };
+ 37:     return true;
+ 38: };
+ 39: 
+ 40: // 文字列が"sh"と一致するか否かを判定する関数
+ 41: static inline bool compare_with_shell(char *str) {
+ 42:     char target[SHELLLEN];
+ 43:     bpf_probe_read(&target, sizeof(target), str); // 引数をローカル変数にコピー
+ 44:     char shell[]="sh";
+ 45:     // eBPFは文字列系の関数はないので面倒な手順が必要
+ 46:     for (int i=0; i< SHELLLEN; i++){
+ 47:         if (target[i] != shell[i]) return false;
+ 48:     };
+ 49:     return true;
+ 50: };
+ 51: 
+ 52: // execveが実行された場合に走るプログラム(関数)
+ 53: int syscall__execve(struct pt_regs *ctx)
+ 54: {
+ 55:     struct key_t key = {};
+ 56:     // execveを呼び出したプロセス名を取得
+ 57:     bpf_get_current_comm(&key.comm, sizeof(key.comm));
+ 58: 
+ 59:     int  idx;
+ 60:     // execveを呼び出したプロセスがbashかshellか，それ以外かを判定
+ 61:     if (compare_with_bash(key.comm)) {
+ 62:         idx = 0;
+ 63:     } else {
+ 64:         if (compare_with_shell(key.comm)) {
+ 65:             idx = 1;
+ 66:         } else {
+ 67:             return 0; // bashでもshellでもない場合は終了
+ 68:         }
+ 69:     }
+ 70: 
+ 71:     // execveを実行したプロセスのuidを取得
+ 72:     u64 ugid = bpf_get_current_uid_gid();
+ 73:     u32 uid = ugid; // 下32bitがuid
+ 74: 
+ 75:     // rootかそれ以外かに分別
+ 76:     if (uid != 0) {
+ 77:         uid = 1;
+ 78:     }
+ 79: 
+ 80:     void * inner_map;
+ 81:     // 外部表から内部表を取り出し
+ 82:     inner_map = map_array.lookup(&idx);
+ 83:     if (!inner_map) return 0;
+ 84: 
+ 85:     int *val;
+ 86:     long value;
+ 87:     // 内部表のuidに対応する要素を取得
+ 88:     val = bpf_map_lookup_elem(inner_map, &uid);
+ 89:     if (val) { // 取得した要素を更新
+ 90:         value = *val + 1;
+ 91:         // 更新処理本体． 末尾の引数は該当要素がなかった場合にどうするかなどを
+ 92:         // 指定するフラグ(README.mdを参照)
+ 93:         bpf_map_update_elem(inner_map, &uid, &value, BPF_ANY);
+ 94:     }
+ 95: 
+ 96:     return 0;
+ 97: };
+ 98: """
+ 99: 
+100: # eBPFのブログラムをロード
+101: b = BPF(text=bpf_text)
+102: 
+103: # 表の定義
+104: bash_cnt = b.get_table("bashcnt")   # bash用の内部表
+105: sh_cnt = b.get_table("shcnt")       # shell用の内部表
+106: uid_cnt = b.get_table("map_array")  # 外部表の定義
+107: 
+108: #内部表を外側の表の要素として登録
+109: uid_cnt[ct.c_int(0)] = ct.c_int(bash_cnt.get_fd())
+110: uid_cnt[ct.c_int(1)] = ct.c_int(sh_cnt.get_fd())
+111: 
+112: # eBPFのプログラムをexecveのkprobeに割当て
+113: execve_fnname = b.get_syscall_fnname("execve")
+114: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+115: 
+116: # filter and format output
+117: while 1:
+118:     print("=================測定結果===================")
+119:     try:
+120:         print("bashの結果:")
+121:         for k in bash_cnt.keys():    # 表のキーでループ
+122:             val = bash_cnt[k].value  # 表のキーに対応する要素を取得
+123:             i = k.value              # キーを値に変換
+124:             if i == 0 :
+125:                 print("rootユーザ: {} 回execve呼び出し".format(val))
+126:             else:
+127:                 print("一般ユーザ: {} 回execve呼び出し".format(val))
+128:         bash_cnt.clear()
+129:         print("")
+130:         print("shellの結果:")
+131:         for k in sh_cnt.keys():      # 表のキーでループ
+132:             val = sh_cnt[k].value    # 表のキーに対応する要素を取得
+133:             i = k.value              # キーを値に変換
+134:             if i == 0 :
+135:                 print("rootユーザ: {} 回execve呼び出し".format(val))
+136:             else:
+137:                 print("一般ユーザ: {} 回execve呼び出し".format(val))
+138:         sh_cnt.clear()
+139:         print("")
+140:         print("")
+141:         time.sleep(10)
+142:     except KeyboardInterrupt:
+143:         # Ctrl-Cでループから脱出
+144:         exit()
+145: 
+146: 

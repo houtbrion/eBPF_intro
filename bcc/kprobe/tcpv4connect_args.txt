@@ -1,0 +1,59 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: #
+ 4: # simple example based on tcpv4connect
+ 5: #
+ 6: # Copyright (c) 2015 Brendan Gregg.
+ 7: # Licensed under the Apache License, Version 2.0 (the "License")
+ 8: #
+ 9: # 15-Oct-2015	Brendan Gregg	Created this.
+10: 
+11: #from __future__ import print_function
+12: from bcc import BPF
+13: from bcc.utils import printb
+14: 
+15: # eBPFのプログラムを文字列として定義
+16: bpf_text = """
+17: #include <net/sock.h>
+18: 
+19: // tcp_v4_connet()実行開始時に実行される部分
+20: int kprobe__tcp_v4_connect(struct pt_regs *ctx, struct sock *sk, struct sockaddr *uaddr, int addr_len)
+21: {
+22:         // 引数の一部(addr_len)をユーザ空間にbpf_trace_printk()で通知
+23: 	bpf_trace_printk("start of tcp4connect addr_len=%d\\n",addr_len);
+24: 	return 0;
+25: };
+26: 
+27: // tcp_v4_connect()実行終了時に実行される部分
+28: int kretprobe__tcp_v4_connect(struct pt_regs *ctx)
+29: {
+30: 
+31:         // tcp_v4_connectの実行結果(返り値)を取得
+32: 	int ret = PT_REGS_RC(ctx);
+33: 
+34:         // ユーザ空間に返り値を含めて通知
+35: 	bpf_trace_printk("return value of tcp4connect %d\\n", ret);
+36: 	return 0;
+37: }
+38: """
+39: 
+40: # 定義したプログラムをeBPFのVMにロードさせる
+41: # 監視対象は，ソースの各関数の名前で自動で判定される
+42: b = BPF(text=bpf_text)
+43: 
+44: # ヘッダの出力
+45: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+46: 
+47: # eBPFのプログラムの出力を受信して出力するループ
+48: while 1:
+49:         # Read messages from kernel pipe
+50:         try:
+51:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+52:         except ValueError:
+53:             # Ignore messages from other tracers
+54:             continue
+55:         except KeyboardInterrupt:
+56:             # Ctrl-Cでループから脱出
+57:             exit()
+58: 
+59:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))

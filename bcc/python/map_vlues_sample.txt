@@ -1,0 +1,66 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: import time
+ 6: 
+ 7: # define BPF program
+ 8: bpf_text = """
+ 9: // indexが非負32bit整数，値がlongのuidcntという表(要素数2)を定義
+10: BPF_TABLE("array", uint32_t, long, uidcnt, 2);
+11: int syscall__execve(struct pt_regs *ctx)
+12: {
+13:     // execveのuid/tgidを取得
+14:     u64 ugid = bpf_get_current_uid_gid();
+15:     u32 uid = ugid;  // 取得したIDの下32bitがuid
+16:     u32  idx;
+17:     if (uid == 0) {  // uidがrootの時，indexは0
+18:         idx = 0;
+19:     } else {         // uidが非rootの時，indexは1
+20:         idx = 1;
+21:     }
+22:     long *value;
+23:     value = uidcnt.lookup(&idx); // 表のエントリを取得
+24:     if (value) {
+25:         uidcnt.increment(idx);   // 表のエントリを更新
+26:     }
+27: 
+28:     return 0;
+29: };
+30: """
+31: 
+32: # initialize BPF
+33: b = BPF(text=bpf_text)
+34: 
+35: # execveが実行された場合にVM上の関数「syscall__execve()」を呼び出す設定
+36: execve_fnname = b.get_syscall_fnname("execve")
+37: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+38: 
+39: # テーブルの取得
+40: uidcnt = b.get_table("uidcnt")
+41: 
+42: # filter and format output
+43: while 1:
+44:     print("=================測定結果===================")
+45:     try:
+46:         print("【map.keys()を使った場合の出力】")
+47:         for k in uidcnt.keys():    # 表のキーでループ
+48:             val = uidcnt[k].value  # 表のキーに対応する要素を取得
+49:             i = k.value            # キーを値に変換
+50:             if i == 0 :
+51:                 print("rootユーザ: {} 回execve呼び出し".format(val))
+52:             else:
+53:                 print("一般ユーザ: {} 回execve呼び出し".format(val))
+54:         print("")
+55:         print("【map.values()を使った場合の出力】")
+56:         print("rootユーザ ,  一般ユーザ ")
+57:         for v in uidcnt.values():  # 表の値を全部一気に取得してループ
+58:             print(v.value, '(回)           ', end=" ")
+59:         print("")
+60:         print("")
+61:         uidcnt.clear()             # 表をクリア
+62:         time.sleep(5)              # 5秒待機
+63:     except KeyboardInterrupt:      # Ctrl-Cでループから抜ける
+64:         exit()
+65: 
+66: 

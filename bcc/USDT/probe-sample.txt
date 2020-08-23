@@ -1,0 +1,49 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF, USDT
+ 5: from bcc.utils import printb
+ 6: import sys
+ 7: 
+ 8: # eBPFプログラム本体
+ 9: bpf_text="""
+10: #include <uapi/linux/ptrace.h>
+11: int do_trace(struct pt_regs *ctx) {
+12:     uint32_t counter;
+13:     uint64_t addr;
+14:     bpf_usdt_readarg(1, ctx, &counter);
+15:     bpf_usdt_readarg(2, ctx, &addr);
+16:     bpf_trace_printk("counter:%d  text:%s\\n", counter, addr);
+17:     return 0;
+18: };
+19: """
+20: 
+21: # 引数の確認
+22: if len(sys.argv) < 2:
+23:     print("USAGE: probe-sample PID")
+24:     exit()
+25: pid = sys.argv[1]
+26: debug = 0
+27: 
+28: # USDTの指定ポイントにeBPFプログラムを割り付け
+29: u = USDT(pid=int(pid))
+30: u.enable_probe(probe="test-probe", fn_name="do_trace")
+31: if debug:
+32:     print(u.get_text())
+33:     print(bpf_text)
+34: 
+35: b = BPF(text=bpf_text, usdt_contexts=[u])
+36: 
+37: # eBPFからの出力を受けてoutputするループ
+38: while 1:
+39:     try:
+40:         (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+41:     except ValueError:
+42:         print("value error")
+43:         continue
+44:     except KeyboardInterrupt:
+45:         exit()
+46:     printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+47: 
+48: 
+49: 

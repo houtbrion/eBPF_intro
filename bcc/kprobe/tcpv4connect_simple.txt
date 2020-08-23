@@ -1,0 +1,51 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: from bcc.utils import printb
+ 6: 
+ 7: # eBPFのプログラムを文字列として定義
+ 8: bpf_text = """
+ 9: #include <uapi/linux/ptrace.h>
+10: 
+11: // tcp_v4_connet()実行開始時に実行される部分
+12: int kprobe__tcp_v4_connect(struct pt_regs *ctx)
+13: {
+14: 	bpf_trace_printk("start of tcp4connect\\n");
+15: 	return 0;
+16: };
+17: 
+18: // tcp_v4_connect()実行終了時に実行される部分
+19: int kretprobe__tcp_v4_connect(struct pt_regs *ctx)
+20: {
+21:         // tcp_v4_connectの実行結果(返り値)を取得
+22: 	int ret = PT_REGS_RC(ctx);
+23: 
+24:         // ユーザ空間に返り値を含めて通知
+25: 	bpf_trace_printk("return value of tcp4connect %d\\n", ret);
+26: 	return 0;
+27: }
+28: """
+29: 
+30: # 定義したプログラムをeBPFのVMにロードさせる
+31: # 監視対象は，ソースの各関数の名前で自動で判定される
+32: b = BPF(text=bpf_text)
+33: 
+34: # ヘッダの出力
+35: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+36: 
+37: # eBPFのプログラムの出力を受信して出力するループ
+38: while 1:
+39:         # Read messages from kernel pipe
+40:         try:
+41:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+42:         except ValueError:
+43:             # Ignore messages from other tracers
+44:             continue
+45:         except KeyboardInterrupt:
+46:             # Ctrl-Cでループから脱出
+47:             exit()
+48: 
+49:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))
+50: 
+51: 

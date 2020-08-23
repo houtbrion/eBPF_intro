@@ -1,0 +1,33 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: from bcc.utils import printb
+ 6: 
+ 7: # eBPFのソースをVMに読み取らせる
+ 8: b = BPF(text="""
+ 9: #define KBUILD_MODNAME "tcp_probe"
+10: #include <net/ipv6.h>
+11: TRACEPOINT_PROBE(tcp, tcp_probe) {
+12:     // args is from /sys/kernel/debug/tracing/events/tcp/tcp_probe/format
+13:     bpf_trace_printk("%d %d %d\\n", args->daddr[0], args->daddr[1], args->daddr[2]);
+14:     return 0;
+15: }
+16: """)
+17: 
+18: # ヘッダ出力
+19: print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MSG"))
+20: 
+21: # eBPFからのoutputを受信してプリントアウトするループ
+22: while 1:
+23:     try:
+24:         (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+25:     except ValueError:
+26:         continue
+27:     except KeyboardInterrupt:
+28:         # Ctrl-Cでループから脱出
+29:         exit()
+30:     printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+31: 
+32: 
+33: 

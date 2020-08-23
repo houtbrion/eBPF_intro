@@ -1,0 +1,106 @@
+  1: #!/usr/bin/python
+  2: # -*- coding: utf-8 -*-
+  3: # @lint-avoid-python-3-compatibility-imports
+  4: #
+  5: # opensnoop Trace open() syscalls.
+  6: #           For Linux, uses BCC, eBPF. Embedded C.
+  7: #
+  8: #
+  9: # Copyright (c) 2015 Brendan Gregg.
+ 10: # Licensed under the Apache License, Version 2.0 (the "License")
+ 11: #
+ 12: # 17-Sep-2015   Brendan Gregg   Created this.
+ 13: # 29-Apr-2016   Allan McAleavy  Updated for BPF_PERF_OUTPUT.
+ 14: # 08-Oct-2016   Dina Goldshtein Support filtering by PID and TID.
+ 15: # 28-Dec-2018   Tim Douglas     Print flags argument, enable filtering
+ 16: # 06-Jan-2019   Takuma Kume     Support filtering by UID
+ 17: 
+ 18: from __future__ import print_function
+ 19: from bcc import BPF
+ 20: from bcc.utils import printb
+ 21: from datetime import datetime, timedelta
+ 22: import os
+ 23: 
+ 24: # define BPF program
+ 25: bpf_text = """
+ 26: #include <linux/sched.h>
+ 27: 
+ 28: // perf_submit()用のデータ型定義
+ 29: struct data_t {
+ 30:     u64 id;
+ 31:     u64 ts;
+ 32:     u32 uid;
+ 33:     int ret;
+ 34:     char comm[TASK_COMM_LEN];
+ 35:     char fname[NAME_MAX];
+ 36:     int flags; // EXTENDED_STRUCT_MEMBER
+ 37: };
+ 38: 
+ 39: BPF_PERF_OUTPUT(events);
+ 40: 
+ 41: KRETFUNC_PROBE(do_sys_open, int dfd, const char __user *filename, int flags, int mode, int ret)
+ 42: {
+ 43:     struct data_t data = {};
+ 44:     bpf_get_current_comm(&data.comm, sizeof(data.comm));
+ 45: 
+ 46:     u64 tsp = bpf_ktime_get_ns();
+ 47: 
+ 48:     bpf_probe_read_user(&data.fname, sizeof(data.fname), (void *)filename);
+ 49:     data.id    = bpf_get_current_pid_tgid();
+ 50:     data.ts    = tsp / 1000;
+ 51:     data.uid   = bpf_get_current_uid_gid();
+ 52:     data.flags = flags; // EXTENDED_STRUCT_MEMBER
+ 53:     data.ret   = ret;
+ 54: 
+ 55:     events.perf_submit(ctx, &data, sizeof(data));
+ 56: 
+ 57:     return 0;
+ 58: }
+ 59: """
+ 60: 
+ 61: is_support_kfunc = BPF.support_kfunc()
+ 62: if not is_support_kfunc:
+ 63:     print("kfunc is not supported.")
+ 64:     exit()
+ 65: 
+ 66: # initialize BPF
+ 67: b = BPF(text=bpf_text)
+ 68: 
+ 69: initial_ts = 0
+ 70: 
+ 71: # header
+ 72: print("%-6s %-16s %4s %3s " %
+ 73:       ("PID", "COMM", "FD", "ERR"), end="")
+ 74: print("PATH")
+ 75: 
+ 76: # process event
+ 77: def print_event(cpu, data, size):
+ 78:     event = b["events"].event(data)
+ 79:     global initial_ts
+ 80: 
+ 81:     # split return value into FD and errno columns
+ 82:     if event.ret >= 0:
+ 83:         fd_s = event.ret
+ 84:         err = 0
+ 85:     else:
+ 86:         fd_s = -1
+ 87:         err = - event.ret
+ 88: 
+ 89:     if not initial_ts:
+ 90:         initial_ts = event.ts
+ 91: 
+ 92:     printb(b"%-6d %-16s %4d %3d " %
+ 93:            (event.id >> 32,
+ 94:             event.comm, fd_s, err), nl="")
+ 95: 
+ 96:     printb(b'%s' % event.fname)
+ 97: 
+ 98: # loop with callback to print_event
+ 99: b["events"].open_perf_buffer(print_event, page_cnt=64)
+100: start_time = datetime.now()
+101: duration=timedelta(seconds=int(10))
+102: while datetime.now() - start_time < duration:
+103:     try:
+104:         b.perf_buffer_poll()
+105:     except KeyboardInterrupt:
+106:         exit()

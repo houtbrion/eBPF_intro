@@ -1,0 +1,82 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: from bcc.utils import printb
+ 6: 
+ 7: # eBPFのVMにロードするプログラムのソースを文字列として定義
+ 8: bpf_text = """
+ 9: #include <linux/sched.h>
+10: 
+11: #define BASH "bash"
+12: #define BASHLEN 4
+13: 
+14: // 取得したデータを一時的に可能するための構造体定義
+15: struct data_t {
+16:     u32 pid;
+17:     char comm[TASK_COMM_LEN];
+18:     u64 time;
+19: };
+20: 
+21: // ターゲットのsystem callを実行したプロセスがbashか否かを判定
+22: static inline bool compare_with_bash(char *str) {
+23:     char target[BASHLEN];
+24:     // 引数の文字列をローカル変数にコピー
+25:     bpf_probe_read(&target, sizeof(target), str);
+26:     char bash[]="bash";
+27:     // eBPFはstrncmp()などはないので面倒だがループで比較
+28:     for (int i=0; i< BASHLEN; i++){
+29:         if (target[i] != bash[i]) return false;
+30:     };
+31:     return true;
+32: };
+33: 
+34: int syscall__execve(struct pt_regs *ctx)
+35: {
+36:     struct data_t data = {};
+37:     // カーネル内部時刻を取得
+38:     data.time = bpf_ktime_get_ns();
+39: 
+40:     // プロセスIDを取得
+41:     u64 pgid = bpf_get_current_pid_tgid();
+42:     data.pid = pgid;          // 下32bitがpid
+43: 
+44:     // execveを実行したプロセスの名前を取得
+45:     bpf_get_current_comm(&data.comm, sizeof(data.comm));
+46: 
+47:     // 取得した情報の一部をユーザ空間に通知
+48:     bpf_trace_printk("start of execve time = %ld , pid = %u, comm = %s\\n",data.time, data.pid, data.comm);
+49: 
+50:     // 呼び出し元のプロセスがbashか否かで処理を切り替え
+51:     if (compare_with_bash(data.comm)) {
+52:         // bashの場合は，実行しようとしたプログラムのバイナリファイルのパーミッションが実行不可と通知
+53:         // (execveの返り値を書き換え)
+54:         bpf_override_return(ctx, -EACCES);
+55:     }
+56:     return 0;
+57: };
+58: """
+59: 
+60: # 上で定義した文字列のCコードをeBPFのVMに与える
+61: b = BPF(text=bpf_text)
+62: 
+63: # eBPFのVMのプログラムをkprobeのexecveに割付け
+64: execve_fnname = b.get_syscall_fnname("execve")
+65: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+66: 
+67: # ヘッダの出力
+68: print("%-6s %-12s %s" % ("PID", "COMM", "OUTPUT"))
+69: 
+70: # eBPFのプログラムが出力する内容(bpf_trace_printk())を無限ループで受信して出力
+71: while 1:
+72:         # Read messages from kernel pipe
+73:         try:
+74:             (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+75:         except ValueError:
+76:             # Ignore messages from other tracers
+77:             continue
+78:         except KeyboardInterrupt:
+79:             # Ctrl-Cが入力された場合はループから抜け出す
+80:             exit()
+81: 
+82:         printb(b"%-6d %-12.12s %s" % (pid, task, msg))

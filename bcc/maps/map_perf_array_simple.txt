@@ -1,0 +1,59 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: import bcc
+  5: import ctypes
+  6: import multiprocessing
+  7: import os
+  8: import time
+  9: import unittest
+ 10: 
+ 11: class TestPerfCounter(unittest.TestCase):
+ 12:     def test_cycles(self):
+ 13:         text = """
+ 14: BPF_PERF_ARRAY(cnt1, NUM_CPUS);
+ 15: BPF_ARRAY(prev, u64, NUM_CPUS);
+ 16: BPF_HISTOGRAM(dist);
+ 17: int do_sys_getuid(void *ctx) {
+ 18:     u32 cpu = bpf_get_smp_processor_id();
+ 19:     u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);
+ 20: 
+ 21:     if (((s64)val < 0) && ((s64)val > -256))
+ 22:         return 0;
+ 23: 
+ 24:     prev.update(&cpu, &val);
+ 25:     return 0;
+ 26: }
+ 27: int do_ret_sys_getuid(void *ctx) {
+ 28:     u32 cpu = bpf_get_smp_processor_id();
+ 29:     u64 val = cnt1.perf_read(CUR_CPU_IDENTIFIER);
+ 30: 
+ 31:     if (((s64)val < 0) && ((s64)val > -256))
+ 32:         return 0;
+ 33: 
+ 34:     u64 *prevp = prev.lookup(&cpu);
+ 35:     if (prevp)
+ 36:         dist.increment(bpf_log2l(val - *prevp));
+ 37:     return 0;
+ 38: }
+ 39: """
+ 40:         b = bcc.BPF(text=text, debug=0,
+ 41:                 cflags=["-DNUM_CPUS=%d" % multiprocessing.cpu_count()])
+ 42:         event_name = b.get_syscall_fnname("getuid")
+ 43:         b.attach_kprobe(event=event_name, fn_name="do_sys_getuid")
+ 44:         b.attach_kretprobe(event=event_name, fn_name="do_ret_sys_getuid")
+ 45:         cnt1 = b["cnt1"]
+ 46:         try:
+ 47:             cnt1.open_perf_event(bcc.PerfType.HARDWARE, bcc.PerfHWConfig.CPU_CYCLES)
+ 48:         except:
+ 49:             print("error no = ",ctypes.get_errno())
+ 50:             if ctypes.get_errno() == 2:
+ 51:                 print("hardware events unsupported")
+ 52:                 raise self.skipTest("hardware events unsupported")
+ 53:             raise
+ 54:         for i in range(0, 100):
+ 55:             os.getuid()
+ 56:         b["dist"].print_log2_hist()
+ 57: 
+ 58: if __name__ == "__main__":
+ 59:     unittest.main()

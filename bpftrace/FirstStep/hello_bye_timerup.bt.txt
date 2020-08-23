@@ -1,0 +1,16 @@
+ 1: BEGIN{
+ 2:   printf("Hello, World!\n");
+ 3: }
+ 4: 
+ 5: interval:s:1 {
+ 6:   printf("1sec passed\n");
+ 7: }
+ 8: 
+ 9: interval:s:10 {
+10:   printf("timeout (10sec)\n");
+11:   exit();
+12: }
+13: 
+14: END{
+15:   printf("Good bye.\n");
+16: }

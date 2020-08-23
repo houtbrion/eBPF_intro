@@ -1,0 +1,16 @@
+ 1: BEGIN{
+ 2:   printf("I will watch vfs_read().\n");
+ 3:   printf("Please input Ctrl-C to finish this program.\n");
+ 4: }
+ 5: 
+ 6: kprobe:vfs_read
+ 7: {
+ 8:   if (comm!="bash") {
+ 9:     return;
+10:   }
+11:   printf("%s read %d bytes\n", comm, arg2);
+12: }
+13: 
+14: END{
+15:   printf("\nterminating to watch vfs_read().\n");
+16: }

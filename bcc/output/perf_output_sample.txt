@@ -1,0 +1,71 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: #from __future__ import print_function
+ 5: from bcc import BPF
+ 6: from bcc.utils import printb
+ 7: 
+ 8: # eBPFのVMにロードさせるプログラムのCコードを文字列として定義
+ 9: bpf_text = """
+10: #include <linux/sched.h>
+11: 
+12: // 取得したデータを一時的に可能するための構造体定義
+13: struct data_t {
+14:     u32 pid;
+15:     char comm[TASK_COMM_LEN];
+16:     u64 time;
+17: };
+18: 
+19: // ユーザ空間に通知するI/Fの名前を定義
+20: BPF_PERF_OUTPUT(events);
+21: 
+22: int syscall__execve(struct pt_regs *ctx)
+23: {
+24:     struct data_t data = {};
+25:     // カーネル内部時刻を取得
+26:     data.time = bpf_ktime_get_ns();
+27: 
+28:     // プロセスIDを取得
+29:     u64 pgid = bpf_get_current_pid_tgid();
+30:     data.pid = pgid;  // 下32bitがpid
+31: 
+32:     // execveを実行したプロセスの名前を取得
+33:     bpf_get_current_comm(&data.comm, sizeof(data.comm));
+34: 
+35:     // 取得した情報をユーザ空間に通知
+36:     events.perf_submit(ctx, &data, sizeof(data));
+37:     return 0;
+38: };
+39: """
+40: 
+41: # 上で定義した文字列のCコードをeBPFのVMに与える
+42: b = BPF(text=bpf_text)
+43: 
+44: # eBPFのVMのプログラムをkprobeのexecveに割付け
+45: execve_fnname = b.get_syscall_fnname("execve")
+46: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+47: 
+48: # eBPFからの通知を受けた場合の処理
+49: def print_event(cpu, data, size):
+50:     # 通知内容を取り出し
+51:     event = b["events"].event(data)
+52:     # 分解して出力
+53:     printb(b"%-18ld %-16s %-6d %s" % (event.time, event.comm, event.pid,
+54:         b"Hello, perf_output!"))
+55: 
+56: # eBPFからの出力I/Fと，出力を受信した場合に呼び出される関数を定義
+57: b["events"].open_perf_buffer(print_event)
+58: 
+59: # ヘッダの出力
+60: print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "MESSAGE"))
+61: 
+62: # eBPFの出力(通知I/F経由)を無限ループでチェック
+63: while 1:
+64:         # Read messages from kernel pipe
+65:         try:
+66:             b.perf_buffer_poll()
+67:         except KeyboardInterrupt:
+68:             # Ctrl-Cでループから脱出
+69:             exit()
+70: 
+71: 

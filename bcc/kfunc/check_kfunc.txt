@@ -1,0 +1,9 @@
+1: #!/usr/bin/python3
+2: 
+3: from bcc import BPF
+4: 
+5: is_support_kfunc = BPF.support_kfunc()
+6: if not is_support_kfunc:
+7:     print("kfunc is not supported")
+8: 
+9: 

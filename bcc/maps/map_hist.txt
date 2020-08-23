@@ -1,0 +1,39 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF
+  5: from time import sleep
+  6: 
+  7: # eBPFのソースを文字列として定義
+  8: b = BPF(text="""
+  9: #include <uapi/linux/ptrace.h>
+ 10: BPF_HISTOGRAM(dist);       // 線形の表
+ 11: BPF_HISTOGRAM(log_dist);   // ログ形式の表
+ 12: 
+ 13: int kprobe__blk_account_io_completion(struct pt_regs *ctx, void *req, unsigned int bytes)
+ 14: {
+ 15:         // IOのデータサイズをキロバイト単位に変換した数値で更新
+ 16: 	dist.increment(bytes / 1024);                 // 線形の表のエントリを更新
+ 17: 	log_dist.increment(bpf_log2l(bytes / 1024));  // ログ形式の表のエントリを更新
+ 18: 	return 0;
+ 19: }
+ 20: """)
+ 21: 
+ 22: # ヘッダの入力
+ 23: print("Tracing block I/O... Hit Ctrl-C to end.")
+ 24: 
+ 25: # 時間が満了するまで待つか，Ctrl-Cが入力されるまで待機
+ 26: try:
+ 27:     sleep(9999999)
+ 28: except KeyboardInterrupt:
+ 29:     # Ctrl-Cで空行を出力して次に進む
+ 30:     print()
+ 31: 
+ 32: # 線形形式の表を出力
+ 33: print("Linear histgram")
+ 34: b["dist"].print_linear_hist("kbytes")
+ 35: print("")
+ 36: 
+ 37: # ログ形式の表を出力
+ 38: print("log2 histgram")
+ 39: b["log_dist"].print_log2_hist("kbytes")

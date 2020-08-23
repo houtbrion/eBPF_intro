@@ -1,0 +1,41 @@
+ 1: #!/usr/bin/python3
+ 2: # -*- coding: utf-8 -*-
+ 3: 
+ 4: from bcc import BPF
+ 5: from bcc.utils import printb
+ 6: 
+ 7: # eBPFのプログラム(文字列)をVMにロードする定義
+ 8: b = BPF(text="""
+ 9: #define KBUILD_MODNAME "tcp_probe"
+10: #include <net/ipv6.h>
+11: TRACEPOINT_PROBE(tcp, tcp_probe) {
+12:     // args is from /sys/kernel/debug/tracing/events/tcp/tcp_probe/format
+13:     // IPv4でなければ終了
+14:     if (args->daddr[0]!=2) return 0;
+15: 
+16:     // Syntax: u64 bpf_get_current_pid_tgid(void)
+17:     // Return: current->tgid << 32 | current->pid
+18:     u32 pid=bpf_get_current_pid_tgid();
+19: 
+20:     // ユーザ空間にポート番号とpidなどをoutput
+21:     bpf_trace_printk("dport =%d , (tgid << 32 | pid) = %lu, pid= %d\\n", args->dport, bpf_get_current_pid_tgid(), pid);
+22:     return 0;
+23: }
+24: """)
+25: 
+26: # ヘッダのoutput
+27: print("%-18s %-16s %-6s %s" % ("TIME(s)", "COMM", "PID", "dport pid"))
+28: 
+29: # eBPFからのoutputを受信してstdoutに出力するループ
+30: while 1:
+31:     try:
+32:         (task, pid, cpu, flags, ts, msg) = b.trace_fields()
+33:     except ValueError:
+34:         continue
+35:     except KeyboardInterrupt:
+36:         # Ctrl-Cでループから脱出
+37:         exit()
+38:     printb(b"%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
+39: 
+40: 
+41: 

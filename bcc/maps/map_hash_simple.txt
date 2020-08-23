@@ -1,0 +1,60 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF
+  5: from bcc.utils import printb
+  6: import time
+  7: 
+  8: # eBPFのソースを文字列として定義
+  9: bpf_text = """
+ 10: #include <linux/sched.h>
+ 11: 
+ 12: // 監視対象のシステムコールを実行したプロセス名を格納するための変数型
+ 13: struct key_t {
+ 14:     char comm[TASK_COMM_LEN];
+ 15: };
+ 16: 
+ 17: BPF_HASH(uidcnt,struct key_t);  // 表の定義
+ 18: 
+ 19: int syscall__execve(struct pt_regs *ctx)
+ 20: {
+ 21:     struct key_t key = {};
+ 22:     // execveを呼び出したプロセス名を取得
+ 23:     bpf_get_current_comm(&key.comm, sizeof(key.comm));
+ 24:     u64 zero=0;
+ 25:     long long *value;
+ 26:     // execveを呼び出したプロセス名をキーとして表のエントリを取得
+ 27:     // もし，エントリが存在しない場合は変数zeroの値(ここでは0)で新規作成
+ 28:     value = uidcnt.lookup_or_try_init(&key, &zero);
+ 29:     if (value) {
+ 30:         // エントリが存在した(もしくは新規に作成できた)場合はエントリをインクリメント
+ 31:         (*value)++;
+ 32:     }
+ 33: 
+ 34:     return 0;
+ 35: };
+ 36: """
+ 37: 
+ 38: # eBPFのブログラムをロード
+ 39: b = BPF(text=bpf_text)
+ 40: # eBPFのプログラムをexecveのkprobeに割当て
+ 41: execve_fnname = b.get_syscall_fnname("execve")
+ 42: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+ 43: 
+ 44: # 表の定義
+ 45: uidcnt = b.get_table("uidcnt")
+ 46: 
+ 47: # eBPFの出力を受信して表示するループ
+ 48: while 1:
+ 49:     print("--- counter : program name-----");
+ 50:     try:
+ 51:         for k, v in sorted(uidcnt.items(), key=lambda uidcnt: uidcnt[1].value):
+ 52:             printb(b"%10d : \"%s\"" % (v.value, k.comm))
+ 53:         uidcnt.clear() # 表をクリア
+ 54:         print("--- end of round -----");
+ 55:         time.sleep(5)  # 5秒待機
+ 56:     except KeyboardInterrupt:
+ 57:         # Ctrl-Cでループを抜ける
+ 58:         exit()
+ 59: 
+ 60: 

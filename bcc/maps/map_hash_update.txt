@@ -1,0 +1,67 @@
+  1: #!/usr/bin/python3
+  2: # -*- coding: utf-8 -*-
+  3: 
+  4: from bcc import BPF
+  5: from bcc.utils import printb
+  6: import time
+  7: 
+  8: # eBPFのソースを文字列として定義
+  9: bpf_text = """
+ 10: #include <linux/sched.h>
+ 11: // 監視対象のシステムコールを実行したプロセス名を格納するための変数型
+ 12: struct key_t {
+ 13:     char comm[TASK_COMM_LEN];
+ 14: };
+ 15: 
+ 16: BPF_HASH(uidcnt,struct key_t);  // 表の定義
+ 17: 
+ 18: int syscall__execve(struct pt_regs *ctx)
+ 19: {
+ 20:     struct key_t key = {};
+ 21: 
+ 22:     // execveを呼び出したプロセス名を取得
+ 23:     bpf_get_current_comm(&key.comm, sizeof(key.comm));
+ 24:     u64 zero=0;
+ 25:     long long *value;
+ 26:     // execveを呼び出したプロセス名をキーとして表のエントリを取得
+ 27:     // もし，エントリが存在しない場合は変数zeroの値(ここでは0)で新規作成
+ 28:     value = uidcnt.lookup_or_try_init(&key, &zero);
+ 29:     if (value) {
+ 30:         // エントリが存在した(もしくは新規に作成できた)場合
+ 31:         long long val=*value;
+ 32:         val++;
+ 33:         uidcnt.update(&key,&val);      // 表のエントリを更新
+ 34:         if (val > 10 ) {               // エントリの値が既定値を超えていた場合
+ 35:             uidcnt.delete(&key);       // エントリを削除
+ 36:             // 表のエントリを再度作成
+ 37:             // これは無くても動くが，insetの練習のために追加 (lookup_or_try_init()が同じ働きをする)
+ 38:             uidcnt.insert(&key,&zero); 
+ 39:         }
+ 40:     }
+ 41: 
+ 42:     return 0;
+ 43: };
+ 44: """
+ 45: 
+ 46: # eBPFのブログラムをロード
+ 47: b = BPF(text=bpf_text)
+ 48: # eBPFのプログラムをexecveのkprobeに割当て
+ 49: execve_fnname = b.get_syscall_fnname("execve")
+ 50: b.attach_kprobe(event=execve_fnname, fn_name="syscall__execve")
+ 51: 
+ 52: # 表を定義
+ 53: uidcnt = b.get_table("uidcnt")
+ 54: 
+ 55: # eBPFの出力を受信して表示するループ
+ 56: while 1:
+ 57:     print("--- counter : program name-----");
+ 58:     try:
+ 59:         for k, v in sorted(uidcnt.items(), key=lambda uidcnt: uidcnt[1].value):
+ 60:             printb(b"%10d \"%s\"" % (v.value, k.comm))
+ 61:         print("---next round-----");
+ 62:         time.sleep(10)
+ 63:     except KeyboardInterrupt:
+ 64:         # Ctrl-Cでループを抜ける
+ 65:         exit()
+ 66: 
+ 67: 
