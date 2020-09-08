@@ -118,7 +118,7 @@ VMを展開していただきたい．
 [kernel-version]: <https://github.com/iovisor/bcc/blob/master/docs/kernel-versions.md> "bccの機能と利用可能なカーネルバージョンの対応関係"
 [install]: <INSTALL.md> "インストールドキュメント"
 [setup]: <SETUP.md> "UbuntuとCentOSのセットアップ"
-[license]: <LICENSE> "ライセンスファイル"
+[license]: <LICENSE> "ライセンス"
 [bpftrace-intro]: <bpftrace/README.md> "bpftrace入門"
 [bcc-intro]: <bcc/README.md> "bcc入門"
 [VMsetup]: <VM_SETUP.md> "VMの利用"
